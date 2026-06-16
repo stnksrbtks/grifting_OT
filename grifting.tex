@@ -1,0 +1,209 @@
+\documentclass[twoside,10pt]{jmlr} 
+% \documentclass{colt2020} % Include author names
+
+% The following packages will be automatically loaded:
+% amsmath, amssymb, natbib, graphicx, url, algorithm2e
+
+\allowdisplaybreaks
+\newcommand{\jmlrBlackBox}{\rule{1.5ex}{1.5ex}}
+\providecommand{\BlackBox}{\jmlrBlackBox}
+\newcommand{\jmlrQED}{\hfill\jmlrBlackBox\par\bigskip}
+\usepackage{graphicx}
+\makeatletter
+ \let\Ginclude@graphics\@org@Ginclude@graphics 
+\makeatother
+
+\newcommand{\rb}[1]{\textcolor{magenta}{RB:#1}}
+
+\pdfoutput=1
+
+%  \newcommand{\jmlrBlackBox}{\rule{1.5ex}{1.5ex}}
+%    \providecommand{\BlackBox}{\jmlrBlackBox}
+%  \newcommand{\jmlrQED}{\hfill\jmlrBlackBox\par\bigskip}
+
+
+%\allowdisplaybreaks
+
+\title{grifting by optimal transport}
+\usepackage{times}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xspace}
+\usepackage{amsmath}
+
+
+\usepackage{mathtools}  
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tabulary}
+\usepackage{booktabs}
+
+\usepackage{bm}
+
+
+\newtheorem{assumption}{Assumption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{algpascal}
+\usepackage{comment}
+\usepackage{selectp}
+\usepackage{selectp}
+
+
+
+\input{gmacros}
+\input{header}
+
+
+\author{
+ \Name[{Gergely~Neu}]{Gergely Neu} \Email{gergely.neu@gmail.com}\\
+ \addr Universitat Pompeu Fabra, Barcelona, Spain
+ \AND
+ \Name{(add-your-name)} \Email{add-your-email@gmail.com}\\
+ \addr University of XYZ
+ }
+ 
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+aaaauuuuu
+\end{abstract}
+
+\begin{keywords}%
+  optimal transport, generative modeling, Markov chains
+\end{keywords}
+
+
+\section{Problem formulation (2026.05.15.)}
+``Drifting models'' is a new (and somehow very popular) approach for generative modeling for learning 
+to sample from a given target distribution $\tgt$ accessible only via samples, given samples from a source distribution 
+$\src$ as input. Essentially, the idea behind drifting models is to define a Markov chain whose stationary distribution 
+is equal to the target distribution, and directly estimate the stationary distribution of the proposed chain. The chain 
+considered in the original work is a simple process that operates via rules of attraction and repellence: roughly 
+speaking, a state is repelled by the source distribution and attracted by the target distribution. The original paper 
+argues that this process converges to the target distribution under some conditions (once the specifics of the policy 
+are set up correctly). Is there a good reason to believe that the proposed process is the best possible one for 
+purposes of generative modeling? This is the question we ask in this note.
+
+We thus formulate our problem as finding a control policy over the state space $\X = \real^d$ that yields $\tgt$ as its 
+stationary distribution. There are many possible policies that satisfy this, e.g., the process above or the one that 
+draws states i.i.d.~from the target distribution, and so on. We try to formulate criteria for a good policy in the 
+language of infinite-horizon undiscounted optimal control below. The main idea is to find a policy with minimal 
+\emph{transient cost} incurred before the stationary distribution is reached. For concreteness, let $\pi:\X \ra 
+\Delta_{\X}$ be a stochastic policy and let us consider its stationary distribution $\nupi$ (assuming that it exists). 
+We denote measures on $\X$ by $\nu$ and the action of the transition kernel $\pi$ is taking $\nu$ to the distribution 
+$\pi\nu$ with density $(\pi\nu)(x) = \int_{\X} \pi(x|x^-) \nu(x^-) \dd x^-$ (assuming everything has densities). Then, 
+the transient state distribution induced by $\pi$ (under initial-state distribution $\src$) is defined as
+\begin{align*}
+ \dpi &= \sum_{t=0}^\infty \pa{\pi^t \src - \nupi} = \sum_{t=0}^\infty \pi^t \pa{\src - \nupi}
+ \\
+ &= \src - \nupi + \sum_{t=1}^\infty \pi^t \pa{\src - \nupi} = \src - \nupi + \pi \dpi.
+\end{align*}
+Well, the last part is not part of the definition but rather a consequence of the definition, which can be seen as the 
+equivalent of the classic flow constraints for occupancy measures. We thus refer to $\dpi$ as the \emph{transient 
+occupancy measure} of $\pi$.
+
+After reparametrizing the problem as in the classic LP formulations to eliminate the product $\pi\dpi$, we thus define 
+the state-next-state transient occupancy $\mupi(x,x')=\dpi(x)\pi(x'|x)$ instead and note that it satisfies the linear 
+constraints
+\[
+ B\mupi = \src - \nupi + F\mupi,
+\]
+where we have defined the forward and backward-marginalization operators $F$ and $B$ with their respective actions 
+$(F\mu)(x) = \int_{\X} \mu(x',x) \dd x'$ and $(B\mu)(x) = \int_{\X} \mu(x,x') \dd x'$. Similarly, the 
+stationary distribution $\nupi$ satisfies
+\[
+ \nupi = \pi \nupi.
+\]
+This one still has a $\pi$ in there which is no good. How can we reconcile this with the state-next-state occupancies? 
+Those should obey the same conditional distribution $\pi$, which seems difficult to extract from $\mu$ while retaining 
+the linearity of the constraints.
+
+Here's an idea that might work. Since we hope to find a policy with stationary distribution equal to $\tgt$, we might 
+as well replace the desired stationary distribution with this measure (and hope that the solution will somehow indeed 
+yield a policy with this limiting measure). We thus simply consider the following linear program:
+\begin{align*}
+ \min_{\mu} \int_{\X} \int_{\X} &\mu(x,x') \norm{x-x'}^2 \dd x \dd x'
+ \\
+ \mbox{subject to} \qquad & B\mu = \src - \tgt + F\mu.
+\end{align*}
+LOL this just looks like the classic Kantorovich LP all over again, except with the two constraints folded into one! 
+Can this still be a good idea somehow? Let us consider a feasible point $\mu$ and try to understand it as a transient 
+occupancy measure (denoting $\mu = \mupi$ and $\pi$ as the corresponding kernel):
+\[
+ \dpi = \src - \tgt + \pi\dpi.
+\]
+Indeed, on the left-hand side we have $\dpi(x) = \int_{\X} \mupi(x,x') \dd x'$ by definition, and on the right-hand 
+side we have $\int_{\X} \mupi(x,x') \dd x = \int_{\X} \dpi(x) \pi(x'|x) \dd x$. Thus, we can iterate the above relation 
+and get
+\[
+ \dpi = \src - \tgt + \pi\dpi = \src - \tgt + \pi(\src - \tgt) + \pi^2 \dpi = \dots = \sum_{t=0}^\infty \pi^t\pa{\src - 
+\tgt}.
+\]
+This sum is convergent if $\pi$ has appropriate mixing properties. But notice that it does not imply that $\tgt$ would 
+be its stationary distribution. So we have basically proved that any quickly-mixing policy $\pi$ is feasible, and that 
+$\dpi$ corresponds to the \emph{difference} of transient measures when started from distributions $\src$ and $\tgt$.
+
+So the problem remains: we should find a formulation that does actually yield $\tgt$ as the stationary distribution. 
+Maybe just explicitly require this via the constraint $F\mu = \tgt$? \grg{NO this is silly: $\mu$ is not directly 
+related to the stationary distribution with equations like that.} This of course brings us back \emph{exactly} to the 
+Kantorovich LP (once the first constraint is simplified appropriately), which also verifies that the optimal policy 
+should be such that it maps $x$ deterministically to $M^\star(x)$ using the Monge map $M^\star$. But this doesn't mean 
+that the above reformulation as a sequential decision-making problem is useless! We could in principle still use ideas 
+from the VDT paper to solve this control problem via primal-dual methods: characterize the value functions by a variant 
+of the Bellman equations (Poisson equations?), the optimal policy in terms of the gradient of the value function, and 
+solve for the optimal value function by primal-dual methods. Maybe it could work, or maybe that's just nonsense... 
+should be fun to think about it anyway.
+
+\subsection{Lazy approach 1: cost optimality under stationary distribution}
+The most straightforward way to fix up this formulation is to do away with the transient occupancies and simply work 
+with stationary distributions. That is, simply consider the following adjustment to the classic undiscounted control LP:
+\begin{align*}
+ \min_{\mu} \int_{\X} \int_{\X} &\mu(x,x') \norm{x-x'}^2 \dd x \dd x'
+ \\
+ \mbox{subject to} \qquad & B\mu = F\mu
+ \\
+ & B\mu = \tgt.
+\end{align*}
+What is the justification for this objective though? The optimal policy might not be unique here, and there's no way to 
+differentiate between ``good'' or ``bad'' ones. The objective only says ``don't move around the states too much once 
+you've hit the target'', but doesn't say anything beyond that. (Also, this formulation doesn't say anything about the 
+source distribution, which may or may not be a bad thing. If we want to connect with OT, it's a bad thing for sure.)
+
+\subsection{Lazy approach 2: discounted transients}
+The second most straightforward approach is to adjust the LP by introducing discounting:
+\begin{align*}
+ \min_{\mu} \int_{\X} \int_{\X} &\mu(x,x') \norm{x-x'}^2 \dd x \dd x'
+ \\
+ \mbox{subject to} \qquad & B\mu = (1-\gamma)\src + \gamma F\mu
+ \\
+ & B\mu = (1-\gamma)\src + \gamma \tgt.
+\end{align*}
+The source is included in the second constraint to make sure that the problem is feasible. Unlike the previous problem 
+formulation, this one is somewhat interpretable: I give you a geometric time horizon to move the source to the target 
+with minimal total transport cost. So basically the dynamic OT problem but with a random time horizon. That helps 
+because the optimal policy is stationary and the value function does not depend on the time index either; all the 
+objects to learn are simpler. It's not clear if the cool properties of the classic dynamic OT solution would be 
+inherited as nicely as in the fixed-horizon case... but that might just make things more interesting. Also, note that 
+sending $\gamma$ to 1 in the limit recovers the previous problem formulation.
+
+
+
+
+
+
+
+
+
+
+\bibliographystyle{plainnat}
+\bibliography{ngbib,shortconfs}
+\end{document}
