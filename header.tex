@@ -1,0 +1,139 @@
+% Put your macros here
+
+\newcommand\am[1]{{\color{red}(\textbf{AM:} #1)}}
+
+\newcommand\pSrc{p_{\text{src}}}
+\newcommand\Pm{\mathbb{P}}
+\newcommand\supp{\text{supp}}
+\newcommand\opt{\text{OPT}}
+
+\newcommand\src{\nu_{\text{src}}}
+\newcommand\tgt{\nu_{\text{tgt}}}
+\newcommand\dSrc{\rho_{\text{src}}}
+\newcommand\dTgt{\rho_{\text{tgt}}}
+\newcommand\Wc{\mathcal{W}}
+\newcommand\fwd{\mathcal{F}}
+\newcommand\bwd{\mathcal{B}}
+\newcommand\Sc{\mathcal{S}}
+% \newcommand\norm[1]{\left\|#1\right\|}
+\newcommand\Lc{\mathcal{L}}
+\newcommand\hLc{\wh{\Lc}}
+%\newcommand\Cc{\mathcal{C}}
+
+% \usepackage{etoc}
+% \usepackage{authblk}
+% \usepackage{microtype}
+% \usepackage{graphicx}
+% %\usepackage{subcaption}
+% \usepackage[T1]{fontenc}
+% \usepackage[english]{babel}
+% \usepackage[utf8]{inputenc}
+% \usepackage{booktabs}
+% \usepackage{array}
+% \usepackage{amsmath}
+% \usepackage{amssymb}
+% \usepackage{mathtools}
+% \usepackage{amsthm}
+% \usepackage{bm}
+% \usepackage{thmtools}
+% \usepackage{thm-restate}
+% \usepackage{hyperref}
+% \hypersetup{
+%     colorlinks = true,
+%     linkcolor = blue,
+%     citecolor=blue,
+%     urlcolor=black,
+% }
+% \usepackage{xcolor}
+% \definecolor{mblue}{rgb}{0.0,0.0,1.0}
+% \definecolor{mgreen}{rgb}{0.0,0.501960784314,0.0}
+% \definecolor{mred}{rgb}{1.0,0.0,0.0}
+% \usepackage[capitalize]{cleveref}
+% \usepackage[ruled]{algorithm2e}
+% \usepackage[noend]{algpseudocode}
+% \renewcommand{\algorithmiccomment}[1]{\hfill$\triangleright~${\color{gray}#1}}
+% \usepackage{bbm}
+% \usepackage{xcolor}
+% \usepackage{parskip}
+% \usepackage{setspace}
+% %\usepackage{etoolbox}
+% \usepackage{comment}
+% \usepackage{caption}
+% \usepackage{enumitem}
+% \usepackage{wrapfig}
+% 
+% \newtheorem{theorem}{Theorem}[section]
+% \newtheorem{example}{Example}[section]
+% \newtheorem{remark}{Remark}[section]
+% \newtheorem{corollary}{Corollary}[section]
+% \newtheorem{definition}{Definition}[section]
+% \newtheorem{lemma}{Lemma}[section]
+% \newtheorem{claim}{Claim}[section]
+% \newtheorem{observation}{Observation}[section]
+% \newtheorem{proposition}{Proposition}[section]
+% \newtheorem{assumption}{Assumption}[section]
+% \newtheorem{question}{Question}
+% \newtheorem{itheorem}{Informal Theorem}[section]
+
+\newcommand\R{\mathbb{R}}
+\newcommand\inner[2]{\left\langle #1, #2 \right\rangle}
+\newcommand\indicator[1]{\mathbbm{1}\left\{ #1 \right\}}
+\newcommand\Simplex[1]{\Delta_{#1}}
+
+\newcommand\Ac{\mathcal{A}}
+\newcommand\Bc{\mathcal{B}}
+\newcommand\Cc{\mathcal{C}}
+\newcommand\Dc{\mathcal{D}}
+\newcommand\Fc{\mathcal{F}}
+\newcommand\Xc{\mathcal{X}}
+\newcommand\Yc{\mathcal{Y}}
+\newcommand\Mc{\mathcal{M}}
+\newcommand\Tc{\mathcal{T}}
+%\newcommand\E{\mathbb{E}}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+\newcommand\Dkl{D_{\text{KL}}}
+\newcommand\pre{p^{\text{pre}}}
+\newcommand\dHat{\hat{d}}
+\newcommand\sHat{\hat{s}}
+\newcommand\pHat{\hat{p}}
+
+\newcommand\OTilde{\tilde{O}}
+\newcommand\biggVert{~\bigg\vert~}
+\newcommand\bigVert{~\big\vert~}
+\newcommand\normVert{~\vert~}
+\newcommand\rHat{\hat{r}}
+\newcommand\floor[1]{\lfloor #1 \rfloor}
+\newcommand\ceil[1]{\lceil #1 \rceil}
+\newcommand{\bc}[1]{\left\{{#1}\right\}}
+\newcommand{\br}[1]{\left({#1}\right)}
+\newcommand{\bs}[1]{\left[{#1}\right]}
+\newcommand{\abs}[1]{\left| {#1} \right|}
+\newcounter{protocol}
+\makeatletter
+\newenvironment{protocol}[1][htb]{%
+  \let\c@algorithm\c@protocol
+  \renewcommand{\ALG@name}{Protocol}
+  \begin{algorithm}[#1]%
+  }{\end{algorithm}
+}
+
+\makeatletter
+\providecommand*{\bigcupdot}{%
+  \mathop{%
+    \vphantom{\bigcup}%
+    \mathpalette\@bigcupdot{}%
+  }%
+}
+\newcommand*{\@bigcupdot}[2]{%
+  \ooalign{%
+    $\m@th#1\bigcup$\cr
+    \sbox0{$#1\bigcup$}%
+    \dimen@=\ht0 %
+    \advance\dimen@ by -\dp0 %
+    \sbox0{\scalebox{1.5}{$\m@th#1\cdot$}}%
+    \advance\dimen@ by -\ht0 %
+    \dimen@=.5\dimen@
+    \hidewidth\raise\dimen@\box0\hidewidth
+  }%
+}
+\makeatother
