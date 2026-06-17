@@ -1,0 +1,53 @@
+# LaTeX generated files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.fmt
+*.fot
+*.cb
+*.cb2
+.*.lb
+*.dvi
+*.dvips
+*.out
+*.log
+*.gz
+*.synctex
+*.synctex.gz
+*.synctex(busy)
+*.bak
+*.backup
+
+# Intermediate files
+*.toc
+*.lot
+*.lof
+*.loe
+*.nav
+*.snm
+*.vrb
+*.makefile
+*.fls
+*.dpth
+*.md5
+*.auxlock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Misc
+*.tmp
