@@ -137,12 +137,12 @@ The \emph{control-theoretic dual} is the linear problem
 \begin{align}
 \dualvalue:=\min_{v\in\Vc} &\quad \int c(x,y)\mu^v(\de x,\de y) \label{eq: dual control problem}\\
 \mbox{ subject to }& \mu^v\in\Ps_\gamma(\statespace^2),\notag\\
-&\quad \bop\mu^v=\mu_0 + \gamma \fop \mu^v %\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^v),
+&\quad \bop\mu^v=\mu_0 + \gamma \fop \mu^v \\ %\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^v),
 &\quad  \fop\mu^v= \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+v_s)\pushforward \mu_0 \notag
 \end{align}
 
 \begin{lemma}\label{lemma: control-theoretic duality}
-    The control-theoretic duality is strong $\primalvalue=\dualvalue$. (We will treat minimiser equivalence later.)
+    The control-theoretic duality is strong, \ie, $\primalvalue=\dualvalue$. (We will treat minimiser equivalence later.)
 \end{lemma}
 
 \begin{proof}
