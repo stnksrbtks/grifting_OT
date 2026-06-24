@@ -75,18 +75,90 @@
  }
  
 \begin{document}
-
 \maketitle
 
-\begin{abstract}
-aaaauuuuu
-\end{abstract}
+% \begin{abstract}
+ 
+% \end{abstract}
 
 \begin{keywords}%
   optimal transport, generative modeling, Markov chains
 \end{keywords}
 
 
-\bibliographystyle{plainnat}
+Consider an affine measurable space $\statespace\subset\mathbb{R}^d$. Fixing $(\pspaceomega,\pspacef,\Pb)$, $\pspaceomega=\statespace$, $\pspacef=\Bs(\statespace)$ the Borell $\sigma$-algebra of $\statespace$, and $\Pb$ a probability measure on $(\pspaceomega,\pspacef)$. Let $v:=(v_t)_{t\in\Nb}$ be a collection of $\pspacef$-measurable automorphisms on $\statespace$. 
+
+The dynamical system of a drifting model \citep{deng2026generative} evolves the prediction during training according to the following Markov chain:
+\begin{align}
+    X_{t+1}^v=X_t^v+ v_t(X_t)\in\statespace \label{eq: dynamical system}\,
+\end{align}
+equivalently, letting $\mu_0$ be probability measure on $(\pspaceomega,\pspacef)$, this can be viewed in terms of the evolution of the law of $X_t$ from its initial distribution $\mu_0$ as
+\begin{align}
+    \begin{cases} \Lc(X_{t+1}^v)=(\Id+v_t)\pushforward\Lc(X_t^v)\\ \Lc(X_0^v)=\mu_0 \end{cases}
+\end{align}
+
+The development of drifting models \cite{deng2026generative} rests on the idea of crafting (by hand) a vector-field-valued map $v$ which is asymptotically stable and whose attracting equilibrium induces $X_{\infty}\sim\nu$ for a given target distribution $\nu\in\Ps(\statespace)$. 
+By using the methodology of least-squares fitting outlined in \cite{deng2026generative}, the specification of $v$ can be leveraged into the \textit{training} of a neural network $f$ which yields an approximate pushforward map transforming a given noise distribution $\mu_0$ into the target distribution $\nu$, i.e.\ $\nu\approx f\pushforward\mu_0$.
+
+From a technical standpoint, the authors of \cite{deng2026generative} construct a family of vector fields $v$ depending on $\nu$ and $\Lc(X_{t})$ which admits as \emph{an} equilibrium the target distribution $\nu$. However, under general conditions it remains unclear whether the resulting mean-field dynamics of $X_t$ will meaningfully converge to $\nu$ as $t\to\infty$, despite them giving some sufficient conditions. 
+
+A contrario, it is tempting to reinterpret \eqref{eq: dynamical system} as a control problem, and try and determine $v$ through the specification of an objective function to be optimised. At an intuitive level, we can then view the efforts of \cite{deng2026generative} as an ad-hoc attempt to guess a control $v$ which will yield the desired target distribution $\nu$. 
+
+Inspired by the recent work of \cite{PDRLOT}, we propose to study this as a \emph{measure constrained} optimal control problem.
+
+\section{Proposed setting}
+
+Let $\gamma\in[0,1)$, $c: \statespace^2 \to \mathbb{R}$ be a measurable cost function, and let $\mu_0\in\Ps(\statespace)$ be a given initial distribution, and consider the optimal control problem, 
+\begin{align}
+    \primalvalue:=\min_{v\in\Vc}&\quad \Eb\left[\sum_{t=0}^{\infty} \gamma^t c(X_t^v, X_{t+1}^v) \right]\label{eq: optimal control problem}\\
+    \mbox{ subject to }& X_{t+1}^v=X_t^v+ v_t(X_t) \mbox{ for all } t\ge 0,\notag \\
+    &\quad X_0\sim\mu_0,\notag
+\end{align}
+where $\Vc\subset (\Sc^\Sc)^\Nb$ is a set of admissible controls. This problem is highly non-linear and non-smooth in $v$ in general, which complicates resolution. While the primal theory which tackles \eqref{eq: optimal control problem} head-on, we will instead focus on the (control-theoretic) dual formulation of the problem, which is linear in the space of measures.
+
+
+To do so, let $\measures_+(\statespace^2)$ be the space of $\sigma$-finite positive measures on $\statespace^2$, and let $\Ps(\statespace^2)\subset \measures(\statespace^2)$ be the space of probability measures on $\statespace^2$.  We define the ``forward'' and ``backward'' marginalisation operators $\fop$ and $\bop$ on $\measures_+(\statespace^2)$ as follows:
+\begin{align}
+\fop: \mu\in\measures_+(\statespace^2)\to \int_{\statespace} \mu(\de x,\cdot)\in \measures_+(\statespace)\\
+\bop: \mu\in\measures_+(\statespace^2)\to \int_{\statespace} \mu(\cdot,\de y)\in \measures_+(\statespace)
+\end{align}
+For any $\gamma\in[0,1)$, let $\Ps_\gamma(\statespace^2):=(1-\gamma)^{-1}\Ps(\statespace^2)$ be the subspace of $\measures_+(\statespace^2)$ of measures with total mass $(1-\gamma)^{-1}$.
+
+For any $v\in\Vc$, with $\mu_0$ implicitely fixed, let $\mu^v\in\Ps_\gamma(\statespace^2)$ be the measure defined by 
+\begin{align}
+    \mu^v(\de x,\de y):=\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^v,X_{t+1}^v)(\de x,\de y).
+\end{align}
+This is equivalently written as \begin{align}
+    \mu^v: (A,B)\in\pspacef^2\to \sum_{t=0}^{\infty} \gamma^t \Pb(X_t^v\in A, X_{t+1}^v\in B) = \sum_{t=0}^{\infty} \gamma^t \Pb(X_t^v\in A,(\Id+v_t)(X_t^v)\in B)\,.
+\end{align}
+
+
+The \emph{control-theoretic dual} is the linear problem
+\begin{align}
+\dualvalue:=\min_{v\in\Vc} &\quad \int c(x,y)\mu^v(\de x,\de y) \label{eq: dual control problem}\\
+\mbox{ subject to }& \mu^v\in\Ps_\gamma(\statespace^2),\notag\\
+&\quad \bop\mu^v=\mu_0 + \gamma \fop \mu^v %\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^v),
+&\quad  \fop\mu^v= \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+v_s)\pushforward \mu_0 \notag
+\end{align}
+
+\begin{lemma}\label{lemma: control-theoretic duality}
+    The control-theoretic duality is strong $\primalvalue=\dualvalue$. (We will treat minimiser equivalence later.)
+\end{lemma}
+
+\begin{proof}
+    That $\int c\de \mu^v = \Eb[\sum_{t=0}^{\infty} \gamma^t c(X_t^v, X_{t+1}^v)]$ is immediate from the definition of $\mu^v$. 
+    
+    To establish the constraints of the dual, note that, by definition $\bop\mu^v=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t}^v)$, and thus
+    \begin{align}
+        \fop\mu^v=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t+1}^v)= \frac1\gamma (\bop\mu^v - \mu_0). 
+    \end{align}
+    This establishes the constraint associated to $X_0\sim\mu_0$. The constraint for the dynamics directly leads to 
+    \begin{align}
+        \fop\mu^v=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t+1}^v)= \sum_{t=0}^{\infty} \gamma^t (\Id+v_t)\pushforward\Lc(X_t^v) = \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+v_s)\pushforward \mu_0\,.
+    \end{align}
+\end{proof}
+
+
+%\bibliographystyle{plainnat}
 \bibliography{../ngbib}
 \end{document}
