@@ -70,7 +70,7 @@
  \Name[{Gergely~Neu}]{Gergely Neu} \Email{gergely.neu@gmail.com}\\
  \addr Universitat Pompeu Fabra, Barcelona, Spain
  \AND
- \Name{{Lorenzo Croissant}} \Email{lorenzo.croissant@upf.edu}\\
+ \Name[{Lorenzo~Croissant}]{Lorenzo Croissant} \Email{lorenzo.croissant@upf.edu}\\
  \addr Universitat Pompeu Fabra, Barcelona, Spain
  }
  
@@ -86,23 +86,24 @@
 \end{keywords}
 
 
-Consider an affine measurable space $\statespace\subset\mathbb{R}^d$. Fixing $(\pspaceomega,\pspacef,\Pb)$, $\pspaceomega=\statespace$, $\pspacef=\Bs(\statespace)$ the Borell $\sigma$-algebra of $\statespace$, and $\Pb$ a probability measure on $(\pspaceomega,\pspacef)$. Let $v:=(v_t)_{t\in\Nb}$ be a collection of $\pspacef$-measurable automorphisms on $\statespace$. 
+Consider an affine measurable space $\statespace\subset\mathbb{R}^d$. Fixing $(\pspaceomega,\pspacef,\Pb)$, $\pspaceomega=\statespace$, $\pspacef=\Bs(\statespace)$ the Borell $\sigma$-algebra of $\statespace$, and $\Pb$ a probability measure on $(\pspaceomega,\pspacef)$. Let $v:=(v_t)_{t\in\Nb}$ be a collection of $\pspacef$-measurable automorphisms on $\statespace$. For any random variable $X:\pspaceomega\to\statespace$, let $\Lc(X)$ denote the law of $X$ under $\Pb$.
 
-The dynamical system of a drifting model \citep{deng2026generative} evolves the prediction during training according to the following Markov chain:
+The dynamical system of a drifting model \citep{deng2026generative} evolves the prediction $X$ during training according to the following Markov chain:
 \begin{align}
-    X_{t+1}^v=X_t^v+ v_t(X_t)\in\statespace \label{eq: dynamical system}\,
+    X_{t+1}^\velocity=X_t^\velocity+ \velocity_t(X_t)\in\statespace \label{eq: dynamical system}\,
 \end{align}
-equivalently, letting $\mu_0$ be probability measure on $(\pspaceomega,\pspacef)$, this can be viewed in terms of the evolution of the law of $X_t$ from its initial distribution $\mu_0$ as
+where $\velocity:(t,x)\in\Nb\x\statespace\to\velocityspace\subset\statespace$. 
+Equivalently, letting $\mu_0$ be a probability measure on $(\pspaceomega,\pspacef)$, this can be viewed in terms of the evolution of the law of $X_t$ from its initial distribution $\mu_0$ as
 \begin{align}
-    \begin{cases} \Lc(X_{t+1}^v)=(\Id+v_t)\pushforward\Lc(X_t^v)\\ \Lc(X_0^v)=\mu_0 \end{cases}
+    \begin{cases} \Lc(X_{t+1}^\velocity)=(\Id+\velocity_t)\pushforward\Lc(X_t^\velocity)\\ \Lc(X_0^\velocity)=\mu_0 \end{cases}
 \end{align}
 
 The development of drifting models \cite{deng2026generative} rests on the idea of crafting (by hand) a vector-field-valued map $v$ which is asymptotically stable and whose attracting equilibrium induces $X_{\infty}\sim\nu$ for a given target distribution $\nu\in\Ps(\statespace)$. 
 By using the methodology of least-squares fitting outlined in \cite{deng2026generative}, the specification of $v$ can be leveraged into the \textit{training} of a neural network $f$ which yields an approximate pushforward map transforming a given noise distribution $\mu_0$ into the target distribution $\nu$, i.e.\ $\nu\approx f\pushforward\mu_0$.
 
-From a technical standpoint, the authors of \cite{deng2026generative} construct a family of vector fields $v$ depending on $\nu$ and $\Lc(X_{t})$ which admits as \emph{an} equilibrium the target distribution $\nu$. However, under general conditions it remains unclear whether the resulting mean-field dynamics of $X_t$ will meaningfully converge to $\nu$ as $t\to\infty$, despite them giving some sufficient conditions. 
+From a technical standpoint, the authors of \cite{deng2026generative} construct a family of vector fields $v$ depending on $\nu$ and $\Lc(X_{t}^\velocity)$ which admits as \emph{an} equilibrium the target distribution $\nu$. However, under general conditions it remains unclear whether the resulting mean-field dynamics of $X_t$ will meaningfully converge to $\nu$ as $t\to\infty$, despite them giving some sufficient conditions. 
 
-A contrario, it is tempting to reinterpret \eqref{eq: dynamical system} as a control problem, and try and determine $v$ through the specification of an objective function to be optimised. At an intuitive level, we can then view the efforts of \cite{deng2026generative} as an ad-hoc attempt to guess a control $v$ which will yield the desired target distribution $\nu$. 
+A contrario, it is tempting to reinterpret \eqref{eq: dynamical system} as a control problem, and try and determine $\velocity$ through the specification of an objective function to be optimised. At an intuitive level, we can then view the efforts of \cite{deng2026generative} as an ad-hoc attempt to guess a control $\velocity$ which will yield the desired target distribution $\nu$. 
 
 Inspired by the recent work of \cite{PDRLOT}, we propose to study this as a \emph{measure constrained} optimal control problem.
 
@@ -110,11 +111,60 @@ Inspired by the recent work of \cite{PDRLOT}, we propose to study this as a \emp
 
 Let $\gamma\in[0,1)$, $c: \statespace^2 \to \mathbb{R}$ be a measurable cost function, and let $\mu_0\in\Ps(\statespace)$ be a given initial distribution, and consider the optimal control problem, 
 \begin{align}
-    \primalvalue:=\min_{v\in\Vc}&\quad \Eb\left[\sum_{t=0}^{\infty} \gamma^t c(X_t^v, X_{t+1}^v) \right]\label{eq: optimal control problem}\\
-    \mbox{ subject to }& X_{t+1}^v=X_t^v+ v_t(X_t) \mbox{ for all } t\ge 0,\notag \\
-    &\quad X_0\sim\mu_0,\notag
+    \primalvalue:\mu_0\in\Ps(\statespace)\mapsto\min_{\control\in\controlspace}&\quad \Eb\left[\sum_{t=0}^{\infty} \gamma^t c(X_t^\control, X_{t+1}^\control) \right]\label{eq: optimal control problem}\\
+    \mbox{ subject to }& X_{t+1}^\control=X_t^\control+ \velocity_t(X_t^\control) \mbox{ for all } t\ge 0,\notag \\
+    &\quad X_0^\control\sim\mu_0,\notag
 \end{align}
-where $\Vc\subset (\Sc^\Sc)^\Nb$ is a set of admissible controls. This problem is highly non-linear and non-smooth in $v$ in general, which complicates resolution. While the primal theory which tackles \eqref{eq: optimal control problem} head-on, we will instead focus on the (control-theoretic) dual formulation of the problem, which is linear in the space of measures.
+where $\controlspace$ is a set of admissible controls. By abuse of notation, we will write $\primalvalue(x)$ for the value of the optimal control problem when $\mu_0=\delta_x$ is a Dirac measure at $x\in\statespace$. It is easy to see that a dynamic programming principle holds for $\primalvalue$, namely
+\begin{align}
+    \primalvalue(x)=\min_{\bar v \in\Sc}\{ c(x, x+\bar v) + \gamma \primalvalue(x+\bar v)\}\,.
+\end{align}
+and that thus 
+\begin{align}
+    \primalvalue(\mu_0)=\int \primalvalue(x)\mu_0(\de x)\,.
+\end{align}
+The optimal policy $\control^*_\cdot\equiv \velocity^*$ is then readily extracted from the minimiser of the right-hand side of the dynamic programming principle.
+
+Consequently, for any $x_0$, optimal trajectories of the system \eqref{eq: dynamical system} follow the constant speed curves
+ \begin{align}
+    t\mapsto \sum_{s=0}^{t-1} \velocity^*(x_s)= (\Id+v^*)^t x_0,
+\end{align} where $x_{s+1}=x_s+\velocity^*(x_s)$.
+This suggests an alternative fitting approach than the one proposed in \cite{deng2026generative}: find an approximate fixed point of $\primalvalue$ using least-squares and a Neural Network, somehow extract $v^*$ (for example with $c$ being a squared norm to obtain the network gradient), and then predictions can be computed by feeding forward through the network a few times. However the issue is we don't have a good way to ensure $X_t\to \nu$ from this. But it could give us ideas for after we include the constraint $\Lc(X_t^\velocity)\to\nu$ in the optimal control problem. 
+
+To reduce the simulation cost, we can also try to find an efficient representation of $(\Id + v^*)^t$ for $t$ either fixed or as an input parameter of a neural network approximating it (this gets us closer in spirit to the simulation-free approach of drifting models). If $v^*$ is a gradient field, then we can use the fact that $(\Id + v^*)^t$ is the gradient of a convex potential field perhaps, by writing this as a gradient flow (this would mirror the approach of \cite{PDRLOT}). If $v^*$ is itself a linear operator, then we can directly operate on the spectrum of $v^*$ to compute the exponential for any $t$ very easily. How to justify that $v^*$ is a linear operator is unclear, maybe we can use a latent space / NTK representation or restrict the control class to linear operators. An approximate alternative is presented by linearising $v^*$ around $x_0$ and then computing the exponential of the linearised operator. This corresponds to doing a single shot straight path simulation. I suppose we could also try to be clever by combining different points like in a Runge-Kutta scheme to get very good approximations on the cheap.
+
+
+
+
+\subsection{Formulations of the simulation constraint}
+
+The dynamical system \eqref{eq: dynamical system}, in the equilibrium condition specified by \cite{deng2026generative}, would ideally satify 
+\begin{align}
+    \lim_{t\to\infty} \Lc(X_t^\velocity)=\nu \mbox{ i.e. } \Lc(X_{t+1}^\velocity)\approx\Lc(X_t^\velocity)\approx\nu\,,
+\end{align}
+for $t$ sufficiently large, where $\nu\in\Ps(\statespace)$ is a given target distribution, and equality is in distribution. If we restrict ourselves to distributions with finite variance (sledgehammer argument: images are bounded), by the metrisation of weak convergence by the Wasserstein-2 distance, this is equivalent to
+\begin{align}
+\Wass_2(\Lc(X_t^\velocity),\nu)\approx\Wass_2(\Lc(X_{t+1}^\velocity),\Lc(X_t^\velocity))\approx0\,.
+\end{align}
+One path: fix as a limit constraint, combine with the other constraint and relax? 
+The stationarity condition can be equivalently rewritten in terms of the velocity field $v_t$ as 
+\begin{align}
+    \sup_{\vp\in C_b(\statespace)}\int\vp(x+v_t(x))- \vp(x)\Lc(X_t^\velocity)(\de x)=0\,,
+\end{align}
+which can be computed using a GAN but this $\sup$ is very bad. Anticipating a bit, if $\mu^\velocity_t=\Lc(X_t^\velocity,X_{t+1}^\velocity)$ and denoting by $\oplus$ the direct sum, this is a convex constraint on $\mu^\velocity_t$:
+\begin{align}
+    \mu^\velocity_t\in\Ps_\gamma(\statespace^2): \sup_{\vp\in C_b(\statespace)}\int\vp\oplus\vp(x,y)\mu^\velocity_t(\de x,\de y)=0\,.
+\end{align}
+Equivalently the distributional constraint can be rewritten as
+\begin{align}
+    \sup_{\vp\in C_b(\statespace)}\int\vp(x)\nu(\de x)- \vp(x)\Lc(X_t^\velocity)(\de x)=0\,.
+\end{align}
+
+One remark about imposing stationarity, if $v$ is constant then $\Lc(X_t^\velocity)= \Lc(X_{t+1}^\velocity)$ implies $\Lc(X_1)=\mu_0$ and thus it is impossible to reach $\nu$ unless $\mu_0=\nu$. 
+
+\subsection{Dual control}
+
+While the primal theory  tackles \eqref{eq: optimal control problem} head-on, we will instead focus on the (control-theoretic) dual formulation of the problem, which is linear in the space of measures.
 
 
 To do so, let $\measures_+(\statespace^2)$ be the space of $\sigma$-finite positive measures on $\statespace^2$, and let $\Ps(\statespace^2)\subset \measures(\statespace^2)$ be the space of probability measures on $\statespace^2$.  We define the ``forward'' and ``backward'' marginalisation operators $\fop$ and $\bop$ on $\measures_+(\statespace^2)$ as follows:
@@ -124,21 +174,21 @@ To do so, let $\measures_+(\statespace^2)$ be the space of $\sigma$-finite posit
 \end{align}
 For any $\gamma\in[0,1)$, let $\Ps_\gamma(\statespace^2):=(1-\gamma)^{-1}\Ps(\statespace^2)$ be the subspace of $\measures_+(\statespace^2)$ of measures with total mass $(1-\gamma)^{-1}$.
 
-For any $v\in\Vc$, with $\mu_0$ implicitely fixed, let $\mu^v\in\Ps_\gamma(\statespace^2)$ be the measure defined by 
+For any $\control\in\controlspace$, with $\mu_0$ implicitely fixed, let $\mu^\control\in\Ps_\gamma(\statespace^2)$ be the measure defined by 
 \begin{align}
-    \mu^v(\de x,\de y):=\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^v,X_{t+1}^v)(\de x,\de y).
+    \mu^\control(\de x,\de y):=\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^\control,X_{t+1}^\control)(\de x,\de y).
 \end{align}
 This is equivalently written as \begin{align}
-    \mu^v: (A,B)\in\pspacef^2\to \sum_{t=0}^{\infty} \gamma^t \Pb(X_t^v\in A, X_{t+1}^v\in B) = \sum_{t=0}^{\infty} \gamma^t \Pb(X_t^v\in A,(\Id+v_t)(X_t^v)\in B)\,.
+    \mu^\control: (A,B)\in\pspacef^2\to \sum_{t=0}^{\infty} \gamma^t \Pb(X_t^\control\in A, X_{t+1}^\control\in B) = \sum_{t=0}^{\infty} \gamma^t \Pb(X_t^\control\in A,(\Id+\velocity_t)(X_t^\control)\in B)\,.
 \end{align}
 
 
 The \emph{control-theoretic dual} is the linear problem
 \begin{align}
-\dualvalue:=\min_{v\in\Vc} &\quad \int c(x,y)\mu^v(\de x,\de y) \label{eq: dual control problem}\\
-\mbox{ subject to }& \mu^v\in\Ps_\gamma(\statespace^2),\notag\\
-&\quad \bop\mu^v=\mu_0 + \gamma \fop \mu^v \\ %\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^v),
-&\quad  \fop\mu^v= \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+v_s)\pushforward \mu_0 \notag
+\dualvalue:=\min_{\control\in\controlspace} &\quad \int c(x,y)\mu^\control(\de x,\de y) \label{eq: dual control problem}\\
+\mbox{ subject to }& \mu^\control\in\Ps_\gamma(\statespace^2),\notag\\
+&\quad \bop\mu^\control=\mu_0 + \gamma \fop \mu^\control \\ %\sum_{t=0}^{\infty} \gamma^t \Lc(X_t^\control),
+&\quad  \fop\mu^\control= \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+\velocity_s)\pushforward \mu_0 \notag
 \end{align}
 
 \begin{lemma}\label{lemma: control-theoretic duality}
@@ -146,18 +196,62 @@ The \emph{control-theoretic dual} is the linear problem
 \end{lemma}
 
 \begin{proof}
-    That $\int c\de \mu^v = \Eb[\sum_{t=0}^{\infty} \gamma^t c(X_t^v, X_{t+1}^v)]$ is immediate from the definition of $\mu^v$. 
+    That $\int c\de \mu^\control = \Eb[\sum_{t=0}^{\infty} \gamma^t c(X_t^\control, X_{t+1}^\control)]$ is immediate from the definition of $\mu^\control$. 
     
-    To establish the constraints of the dual, note that, by definition $\bop\mu^v=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t}^v)$, and thus
+    To establish the constraints of the dual, note that, by definition $\bop\mu^\control=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t}^\control)$, and thus
     \begin{align}
-        \fop\mu^v=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t+1}^v)= \frac1\gamma (\bop\mu^v - \mu_0). 
+        \fop\mu^\control=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t+1}^\control)= \frac1\gamma (\bop\mu^\control - \mu_0). 
     \end{align}
     This establishes the constraint associated to $X_0\sim\mu_0$. The constraint for the dynamics directly leads to 
     \begin{align}
-        \fop\mu^v=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t+1}^v)= \sum_{t=0}^{\infty} \gamma^t (\Id+v_t)\pushforward\Lc(X_t^v) = \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+v_s)\pushforward \mu_0\,.
+        \fop\mu^\control=\sum_{t=0}^{\infty} \gamma^t \Lc(X_{t+1}^\control)= \sum_{t=0}^{\infty} \gamma^t (\Id+\velocity_t)\pushforward\Lc(X_t^\control) = \sum_{t=0}^{\infty} \gamma^t \bigcomp_{s=1}^t(\Id+\velocity_s)\pushforward \mu_0\,.
     \end{align}
 \end{proof}
 
+
+\subsection{A Remark on minimal energy configurations}
+
+If we set $c(x,y)=\|x-y\|^2$, then the optimal control problem \eqref{eq: optimal control problem} becomes 
+\begin{align}
+    \min_{\control\in\controlspace}&\quad \sum_{t=0}^\infty \gamma^t \norm{\velocity_t}^2_2\\
+    \mbox{ subject to }& X_{t+1}^\control=X_t^\control+ \velocity_t(X_t) \mbox{ for all } t\ge 0,\notag \\
+    &\quad X_0\sim\mu_0,\notag
+\end{align}
+
+The constraints vanish in this case, as the objective is independent of the distribution of $X_t^\velocity$. The optimal control problem then reduces to a standard optimal control problem, and the optimal control is given by $\velocity^*_t\equiv 0$ for all $t\ge 0$.
+
+For this to be useful for the transport problem, we need to balance with the constraints so that the movement is uniform in time rather than concentrated at infinity.
+
+
+\section{Forgetting about discounting}
+
+If we set the problem as finite horizon, it is much easier to lay out the constraint we care about for generation.
+
+In particular, we can consider the following finite-horizon optimal control problem, in continuous time, with a terminal constraint:
+\begin{align}
+    \primalvalue(0,\mu_0):=\min_{\control\in\controlspace_0}&\quad \int\int_0^1 c(X_t^\control,\velocity_t(X_t^\control))\de t\de \mu_0\notag\\
+    \mbox{ subject to }& \dot X_t^\control=\velocity_t(X_t^\control) \mbox{ for all } t\in[0,1],\\
+    &\quad X_0^\control\sim\mu_0,\notag\\
+    &\quad \Lc(X_1^\control)=\nu\notag
+\end{align}
+We can then define the cost-to-go functions as $\primalvalue(t,\mu):=\min_{\control\in\controlspace_t}\int_t^1 c(X_s^\control,\velocity_s(X_s^\control))\de s$ subject to $\dot X_s^\control=\velocity_s(X_s^\control)$ for all $s\in[t,1]$, $X_t^\control\sim\mu$, and $\Lc(X_1^\control)=\nu$.
+In either case $\controlspace_t$ is the set of admissible controls on $[t,1]$. 
+
+When $c(x,v)=\norm{v}^2_2$, this is exactly the Benamou-Brenier formulation of optimal transport
+\begin{align}
+\Wass_2^2(\mu_0,\nu)=\min_{\control\in\controlspace_0}&\quad \int_0^1 \int \norm{\velocity_t(x)}^2_2\de \mu_t(x)\de t\\
+    \mbox{ subject to }& \frac\de{\de t}\mu_t+\nabla\cdot(\velocity_t\mu_t)=0 \mbox{ for all } t\in[0,1],\\
+    &\quad \mu_0=\mu_0,\notag\\
+    &\quad \mu_1=\nu\notag\\
+    &\quad t\mapsto\mu_t \mbox{ a.c. and } \Ps_2(\statespace).
+\end{align} 
+
+
+Discretising the problem as in \citet{PDRLOT}, we can solve this via a primal-dual approach, including with only sample access to $\nu$. 
+
+This forgets about the stationarity completely, but notice that any convex function of $\velocity$ induces a stationary control and thus immediate stationarity of the velocity. 
+
+Something that could be interesting is to include in the cost a term such as $\norm{x}_1$ to encourage a turnpike behaviour, pushing into a latent space and back out of it. We can also replace the squared norm with $s\norm{v}_2^2$ or with $\norm{v}_2$ in order to encourage faster convergence to the target distribution from $\mu_0$. 
 
 %\bibliographystyle{plainnat}
 \bibliography{../ngbib}
