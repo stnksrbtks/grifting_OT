@@ -142,7 +142,7 @@ The dynamical system \eqref{eq: dynamical system}, in the equilibrium condition 
 \begin{align}
     \lim_{t\to\infty} \Lc(X_t^\velocity)=\nu \mbox{ i.e. } \Lc(X_{t+1}^\velocity)\approx\Lc(X_t^\velocity)\approx\nu\,,
 \end{align}
-for $t$ sufficiently large, where $\nu\in\Ps(\statespace)$ is a given target distribution, and equality is in distribution. If we restrict ourselves to distributions with finite variance (sledgehammer argument: images are bounded), by the metrisation of weak convergence by the Wasserstein-2 distance, this is equivalent to
+(understood as in distribution) for $t$ sufficiently large, where $\nu\in\Ps(\statespace)$ is a given target distribution, and equality is in distribution. If we restrict ourselves to distributions with finite variance (sledgehammer argument: images are bounded), by the metrisation of weak convergence by the Wasserstein-2 distance, this is equivalent to
 \begin{align}
 \Wass_2(\Lc(X_t^\velocity),\nu)\approx\Wass_2(\Lc(X_{t+1}^\velocity),\Lc(X_t^\velocity))\approx0\,.
 \end{align}
@@ -160,7 +160,11 @@ Equivalently the distributional constraint can be rewritten as
     \sup_{\vp\in C_b(\statespace)}\int\vp(x)\nu(\de x)- \vp(x)\Lc(X_t^\velocity)(\de x)=0\,.
 \end{align}
 
-One remark about imposing stationarity, if $v$ is constant then $\Lc(X_t^\velocity)= \Lc(X_{t+1}^\velocity)$ implies $\Lc(X_1)=\mu_0$ and thus it is impossible to reach $\nu$ unless $\mu_0=\nu$. 
+One remark about imposing stationarity, if $v$ is constant then $\mu:=\Lc(X_t^\velocity)= \Lc(X_{t+1}^\velocity)$ implies that $\mu=(\Id+v) \pushforward \mu$, and thus $\mu\in \ker(\Id + (\Id+v)\pushforward)$, understood as a linear operator on signed measures. Note that this is a linear constraint on $\mu$ but it is coupled to the primal adjoint variable $v$.
+
+Another way to impose stationarity is to require that $T:=\Id+v$ is admissible as a Monge map for the transport problem between $\mu$ and itself, i.e. $T\pushforward \mu = \mu$. This can perhaps be relaxed to a Kolmogorov coupling constraint on the joint. Come to think of it, this is exactly a rewriting of the constraints that the joint be the joint of the stationary Markov chain with transition $T$. 
+
+
 
 \subsection{Dual control}
 
@@ -252,6 +256,53 @@ Discretising the problem as in \citet{PDRLOT}, we can solve this via a primal-du
 This forgets about the stationarity completely, but notice that any convex function of $\velocity$ induces a stationary control and thus immediate stationarity of the velocity. 
 
 Something that could be interesting is to include in the cost a term such as $\norm{x}_1$ to encourage a turnpike behaviour, pushing into a latent space and back out of it. We can also replace the squared norm with $s\norm{v}_2^2$ or with $\norm{v}_2$ in order to encourage faster convergence to the target distribution from $\mu_0$. 
+
+
+\section{Thinking about mean-field controls}
+
+Another way to think about the drifting model optimisation is to treat the empirical data as a finite-particle approximation of a mean-field control problem. In particular, we can view \eqref{eq: optimal control problem} as the mean-field control problem
+\begin{align}
+    \primalvalue(\mu_0):=\min_{\control\in\controlspace}&\quad \Eb\left[\sum_{t=0}^{\infty} \gamma^t c(X_t^\control, \Lc(X_t^\control),\velocity_t) \right]\\
+    \mbox{ subject to }& X_{t+1}^\control=X_t^\control+ \velocity_t(X_t^\control) \mbox{ for all } t\ge 0,\notag \\
+    &\quad X_0^\control\sim\mu_0,\notag
+\end{align}
+where $c$ is now a function of the law of $X_t^\control$ and the velocity field $\velocity_t$. If we take, for instance, $c(x,\mu,v)=\norm{v}^2_2+\Wass_2^2(\mu,\nu)$, then the optimal control problem becomes
+\begin{align}
+    \primalvalue(\mu_0):=\min_{\control\in\controlspace}&\quad \Eb\left[\sum_{t=0}^{\infty} \gamma^t \norm{\velocity_t(X_t^\control)}^2_2+\Wass_2^2(\Lc(X_t^\control),\nu) \right]\\
+    \mbox{ subject to }& X_{t+1}^\control=X_t^\control+ \velocity_t(X_t^\control,\Lc(X_t^\control)) \mbox{ for all } t\ge 0,\notag \\
+    &\quad X_0^\control\sim\mu_0,\notag
+\end{align}
+which is (we can always change the decay scheme of costs to have finite horizon) a penalised version of the Benamou-Brenier tranport problem which encourages convergence to the target distribution $\nu$. Of course, the downside of this is that the velocity field will depend on the attraction of all particles to all samples, just as in the original drifting model. 
+
+
+Below is a small generated overview of what we can hope to do in terms of resolution. Basically, everything will work the same way as with non-measure-valued states, but there will be a nastier measure-valued Bellman equation \eqref{eq: mf master} to solve. However, the resulting optimal control is still a feedback control, and there is a rich literature on the resolution using, say JKO-type schemes. The path to samples it to view our algorithm as directly being the numerical scheme on this problem, including a sample collected to represent the two measures $\mu$ and $\nu$ via propagation of chaos. 
+
+
+Restricting to Markov feedback controls $\velocity_t(\cdot)=\alpha(\cdot,\mu_t)$ with $\mu_t=\Lc(X_t)$, the induced one-step map is
+\[
+    T^\alpha_\mu(x):=x+\alpha(x,\mu),\qquad \mu^+=(T^\alpha_\mu)\pushforward\mu.
+\]
+The dynamic programming principle on $\Ps_2(\statespace)$ then takes the form
+\begin{align}
+    \primalvalue(\mu)=\inf_{\alpha}\left\{\int_{\statespace} c(x,\mu,\alpha(x,\mu))\,\mu(\de x)+\gamma\primalvalue\big((T^\alpha_\mu)\pushforward\mu\big)\right\}.\label{eq: mf dpp}
+\end{align}
+This is the natural discrete-time Bellman equation on the Wasserstein space of probability measures; see for instance \citet{PW18,BFY13,CD18I}. In particular, the optimal feedback should be characterised by minimisers of the right-hand side of \eqref{eq: mf dpp}, exactly as in the finite-dimensional case, but now after lifting the state variable from $x$ to the whole law $\mu$.
+
+Assuming that $\primalvalue$ is differentiable in the sense of Lions\footnote{See e.g. \citet{bao2021bismut}, basically it's Fréchet derivative but for measures. We can easily assume densities and work with them instead.}, one may define the decoupling field
+\[
+    U(\mu,x):=\frac{\delta \primalvalue}{\delta\mu}(\mu)(x),
+\]
+and then formally differentiate \eqref{eq: mf dpp} with respect to $\mu$. If $\alpha^*(\cdot,\mu)$ is an optimal feedback and $T^*_{\mu}(x):=x+\alpha^*(x,\mu)$ with $\mu^+=(T^*_{\mu})\pushforward\mu$, this leads to the discrete-time master equation
+\begin{align}
+    U(\mu,x)=&\ c(x,\mu,\alpha^*(x,\mu))+\gamma U(\mu^+,T^*_{\mu}(x))+\int_{\statespace}\frac{\delta c}{\delta\mu}(y,\mu,\alpha^*(y,\mu))(x)\,\mu(\de y)\label{eq: mf master}\\
+    &\ +\gamma\int_{\statespace} D_xU(\mu^+,T^*_{\mu}(y))\cdot \frac{\delta T^*_{\mu}}{\delta\mu}(y)(x)\,\mu(\de y),\notag
+\end{align}
+again at a purely formal level. Equation \eqref{eq: mf master} is the discrete analogue of the continuous-time master equation from mean-field game and mean-field type control theory, and should be understood as a fixed-point equation for the Lions derivative of the value functional; compare with \citet{CDLL19,CD18II}. It may be possible to formulate this more cleanly by first passing to a finite-horizon problem and then sending the horizon to infinity.
+
+As for solving the problem, the quadratic term $\norm{v}^2_2$ by itself does not make the optimisation a simple least-squares problem: the nonlinearity is hidden in the pushforward constraint $\mu^+=(\mathrm{id}+\alpha(\cdot,\mu))\pushforward\mu$ and in the dependence of the running cost on the evolving law. Thus a direct calculus-of-variations approach is plausible only in special regimes where one can relax the control problem to a convex optimisation over curves of measures or transport plans, as in Benamou--Brenier or JKO-type formulations; see \citet{San15,JKO98,AGS05}. In the general mean-field control setting one typically needs either the dynamic programming/master equation route or the stochastic/variational maximum principle developed in \citet{BFY13,CD18I,CD18II}. 
+
+
+
 
 %\bibliographystyle{plainnat}
 \bibliography{../ngbib}
