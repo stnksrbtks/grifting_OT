@@ -301,6 +301,155 @@ again at a purely formal level. Equation \eqref{eq: mf master} is the discrete a
 
 As for solving the problem, the quadratic term $\norm{v}^2_2$ by itself does not make the optimisation a simple least-squares problem: the nonlinearity is hidden in the pushforward constraint $\mu^+=(\mathrm{id}+\alpha(\cdot,\mu))\pushforward\mu$ and in the dependence of the running cost on the evolving law. Thus a direct calculus-of-variations approach is plausible only in special regimes where one can relax the control problem to a convex optimisation over curves of measures or transport plans, as in Benamou--Brenier or JKO-type formulations; see \citet{San15,JKO98,AGS05}. In the general mean-field control setting one typically needs either the dynamic programming/master equation route or the stochastic/variational maximum principle developed in \citet{BFY13,CD18I,CD18II}. 
 
+\section{Thinking about the transient distribution.}
+
+If we let $v$ be a constant velocity field, assuming that $v$ induces a stationary distribution $q_v$ for the Markov chain \eqref{eq: dynamical system}, i.e. $q_v=(\Id+v)\pushforward q_v$, then we can define the transient distribution of the Markov chain as
+\begin{align}
+    \phi:A\in\Bs(\statespace)\to \sum_{t=0}^\infty \Pb(X_t^\velocity\in A)-q_v(A)\in[0,\infty].
+\end{align}
+
+In this case, we can aim to optimise over $v$ to minimise the energy of the transient distribution, according to some cost criterion. For instance, we can consider the following optimisation problem:
+\begin{align}
+    \min_{v\in\Sc}& \int_{\statespace} c(x)\phi(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v.
+\end{align}
+
+A simple calculation shows that 
+\begin{align}
+    \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v, 
+\end{align}
+if and only if $\phi_v$ is defined as above. We can add this linear constraint to the optimisation problem, and relax the objective to separate $\phi_v$ and $v$. This gives
+\begin{align}
+    \min_{v\in\Sc,\phi\in\Ms}& \langle c\vert\phi\rangle\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v,\\ & \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v \\& \phi\ge \phi_v.
+\end{align}
+
+The transient distribution $\phi_v$ also has two properties which we can switch to constraints on $\phi$ to make optimising over $\phi$ easier. First, $\phi(\Omega)=0$, as both $\Pb(X_t^\velocity\in\cdot)$ and $q_v$ are probability measures. Notice that $\phi$ is unbounded, as is easily shown by taking the two-state system with transition probability matrix
+\begin{align}
+    P_v=\begin{pmatrix} 1-\ve & \ve\\ 0 & 1\end{pmatrix}
+\end{align}
+wherein the transient part has mass $(1-\ve)^{-1}$, on $s_1$ and $1-(1-\ve)^{-1}$ on $s_2$, while $q(s_2)=1$ for any $\ve>0$. Sending $\ve\to 1$ sends $\phi(s_1)\to\infty$ and $\phi(s_2)\to -\infty$.
+
+Adding this, plus the constraint that $q_v$ be the target distribution $\nu$, we can write the optimisation problem as
+\begin{align}
+    \min_{v\in\Sc,\phi\in\Ms}& \langle c\vert\phi\rangle\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v,\\ & \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v\\ & q_v=\nu \\& \phi\ge \phi_v,\\ & \phi(\Omega)=0.
+\end{align}
+
+While this system has non-linearities in the constraints, it doesn't prevent us from writing the primal-dual system and trying to solve it. The main issue for solving is that we need to be able to 1) compute the stationary distribution $q_v$ for any $v$,  2) compute the transient distribution $\phi_v$ for any $v$, and 3) compute the gradient of the transient distribution with respect to $v$ (maybe doable via PG theorem ?). 
+
+The Lagrangian for the system is 
+\begin{align}
+    \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle c\vert\phi\rangle+\langle \lambda_1\vert q_v-(\Id+v)\pushforward q_v\rangle+\langle \lambda_2\vert \phi_v-\mu_0+q_v-(\Id+v)\pushforward \phi_v\rangle\notag\\
+    &+\langle \lambda_3\vert q_v-\nu\rangle+\langle \lambda_4\vert \phi_v-\phi\rangle+\lambda_5(\phi(\Omega))\,,
+\end{align}
+or, reordered,
+\begin{align}
+    \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle c\vert\phi\rangle+\langle \lambda_1\vert (\Id-(\Id+v)\pushforward) q_v\rangle+\langle \lambda_2\vert -(\Id+v)\pushforward \phi_v\rangle+\langle \lambda_2\vert \phi_v-\mu_0+q_v\rangle\notag\\
+    &+\langle \lambda_3\vert q_v-\nu\rangle+\langle \lambda_4\vert \phi_v-\phi\rangle+\lambda_5(\phi(\Omega))\,,\label{eq: lagrangian with measures}
+\end{align}
+which is linear in $\phi$ and $q_v$, but non-linear in $v$.
+
+The gradients with respect to the multipliers and $\phi$ are easy provided knowledge of $\phi_v$ and $q_v$ (except for $\lambda_3$ which requires the target $\nu$ but it can take SGD). On the other hand, taking the gradient in the control space yields
+\begin{align}
+    \nabla_v \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\nabla_v\left(\langle  \lambda_1+\lambda_2+\lambda_3\vert q_v\rangle+ \langle \lambda_2+\lambda_4\vert \phi_v\rangle\right)\notag\\
+    &\qquad+\nabla_v\left(\langle \lambda_1 \vert P_vq_v\rangle -\langle \lambda_2 \vert P_v\phi_v\rangle\right) 
+\end{align}
+where $P_v:=(\Id+v)\pushforward$ is the transition operator of the Markov chain, viewed as a linear operator on signed measures.
+
+We need to be a bit careful about topology here in order to get these derivatives into the inner products. So to be general, let's define a function class $\Fs$ of functions, which is included in $\Cc^0_b$ (the pre-dual of $\Ms$ the space of finite signed measures) and the corresponding $\Fs$-weak topology on the space of signed measures which is the smallest topology such that $\mu\mapsto \langle f\vert \mu\rangle$ is continuous for all $f\in\Fs$. (In general, we will want to take a dense subset of $\Cc^0_b$ with nice test-function properties, such as $\Cc^\infty_c$ or $\Cc^\infty_0$.)
+
+\begin{definition}[Gateaux derivative in the $\Fs$-weak topology]
+    Let $\Fs\subset \Cc^0_b(\statespace)$ be a function class, and let $v\mapsto m_v$ be a map from $\Sc$ to $\Ms$. We say that $m_v$ is $\Fs$-weakly Gateaux differentiable at $v\in\Sc$ if there exists $\De_h m_v:\Sc\to \Ms\in\Ms$ such that, 
+    \begin{align}
+        \lim_{\varepsilon\to 0} \sup_{f\in\Fs}\left|\frac{\langle f\vert m_{v+\varepsilon h}-m_v\rangle}{\varepsilon}-\langle f\vert \De_h m_v\rangle\right|=0.
+    \end{align}
+    We call $\De_h m_v$ the $\Fs$-weak Gateaux derivative of $m_v$ at $v$ in direction $h\in\Sc$, and, if $h\mapsto \De_h m_v$ is well-defined for all $v$ we call $v\mapsto \De_h m_v$ the Gateaux derivative of $m_v$ in direction $h$.
+\end{definition}
+
+Similarly, we can define the Gateaux derivative of an operator $v\mapsto O_v$ with values in linear operators on signed measures, by calling $\bar\De_h O_v$ the Gateaux derivative of $O_v$ at $v$ in direction $h$ if, for all $\mu\in\Ms$,
+\begin{align}
+    \lim_{\varepsilon\to 0} \sup_{f\in\Fs}\left|\frac{\langle f\vert O_{v+\varepsilon h}\mu-O_v\mu\rangle}{\varepsilon}-\langle f\vert \bar\De_h O_v\mu\rangle\right|=0.
+\end{align}
+(We use the notation $\bar\De$ to distinguish the derivative of an operator applied to a measure-valued map from the derivative of the composed map $v\mapsto O_v m_v$ itself.)
+Assuming both $v\mapsto m_v$ and $v\mapsto O_v$ are Gateaux differentiable, we can then write the product rule
+\begin{align}
+    \De_h (O_v m_v)=\bar\De_h O_v m_v+O_v \De_h m_v.
+\end{align}
+Thus, we can rewrite \eqref{eq: lagrangian with measures} as
+\begin{align}
+    \nabla_v \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle \lambda_1+\lambda_2+\lambda_3\vert \De_h q_v\rangle+ \langle \lambda_2+\lambda_4\vert \De_h \phi_v\rangle\notag\\
+    &\qquad+\langle \lambda_1 \vert \bar\De_h P_v q_v+ P_v \De_h q_v\rangle -\langle \lambda_2 \vert \bar\De_h P_v \phi_v+ P_v \De_h \phi_v\rangle.
+\end{align}
+
+\begin{lemma}\label{lemma: derivative of pushforward operator}
+    Let $\mu\in\Ms$ and $f\in\Fs$. Assume $\Fs\subset\Cc^1(\statespace)$ and then, for any $h\in\Sc$ and $v\in\Sc$, the duality pairing of $f$ and the  Gateaux derivative of the pushforward operator $P_v$ is given by
+    \begin{align}
+        \langle f\vert \bar\De_h P_v \mu\rangle=\int \nabla f(x+v(x))\cdot h(x)\,\mu(\de x).
+    \end{align}
+    Which, conceptually can be understood as operator on signed measures whose adjoint is $(\bar\De_h P_v)^*:f \mapsto h\nabla f(\cdot+v(\cdot)) $, where the gradient is of course only on the argument of $f$ (is this what kids these days call a stopgradient?).
+
+    Consequently, $v\mapsto \langle f\vert P_v \mu\rangle$ is Fréchet differentiable in the $\Fs$-weak topology, with Fréchet derivative
+    \begin{align}
+        h\mapsto \int h(x)\nabla f(x+v(x))\,\mu(\de x).
+    \end{align}
+\end{lemma}
+
+\begin{lemma}\label{lemma: derivative of q_v}
+    Let $q_v$ be the stationary distribution associated with the operator $P_v$. Then, for any $h\in\Sc$ and $v\in\Sc$, the Gateaux derivative of $q_v$ in direction $h$ is given by
+    \begin{align}
+        ?
+    \end{align}
+\end{lemma}
+
+
+\begin{proof}
+    This follows by a taylor expansion of $f$ and the definition of the pushforward operator:
+    \begin{align}
+        \langle f\vert P_{v+\varepsilon h}\mu\rangle&=\int f(x+v(x)+\varepsilon h(x))\,\mu(\de x)\\&=\int f(x+v(x))\,\mu(\de x)+\varepsilon \int \nabla f(x+v(x))\cdot h(x)\,\mu(\de x)+o(\varepsilon),
+    \end{align}
+    and thus
+    \begin{align}
+        \langle f\vert \bar\De_h P_v \mu\rangle=\lim_{\varepsilon\to 0} \frac{\langle f\vert P_{v+\varepsilon h}\mu-P_v\mu\rangle}{\varepsilon}=\int \nabla f(x+v(x))\cdot h(x)\,\mu(\de x).
+    \end{align}
+\end{proof}
+
+
+It remains to compute the Gateaux derivatives $\De_h q_v$ and $\De_h \phi_v$. To do so, we start from first principles:
+\begin{align}
+ q_{v+\varepsilon h}= \lim_{t\to\infty} \frac1t \sum_{s=0}^{t-1} P_{v+\varepsilon h}^s \mu_0, \qquad
+\end{align}
+
+Meanwhile, 
+\begin{align}
+    \phi_{v+\varepsilon h}(A) = \Eb\left[\sum_{t=1}^{+\infty} \1_{X_{t}^v\in A} - q_v(A) \right]
+\end{align}
+
+
+\paragraph{GPT output}
+The appropriate notion of derivative here is not a pointwise derivative of a measure, but rather the weak directional derivative of the map $v\mapsto m_v$ with values in signed measures, tested against the Lagrange multipliers. Concretely, if $m_v$ stands for either $q_v$ or $\phi_v$, we say that $m_v$ is directionally differentiable at $v$ in direction $h\in\Sc$ if there exists a signed measure $\dot m_v[h]\in\Ms$ such that, for every bounded measurable test function $f$,
+\begin{align}
+    \frac{\de}{\de\varepsilon}\Big\vert_{\varepsilon=0}\langle f\vert m_{v+\varepsilon h}\rangle=\langle f\vert \dot m_v[h]\rangle.
+\end{align}
+If $h\mapsto \dot m_v[h]$ is linear and continuous, this is the Fr\'echet derivative of the measure-valued map $v\mapsto m_v$. In particular, for the functional $J(v):=\langle f\vert m_v\rangle$, one has
+\begin{align}
+    DJ(v)[h]=\langle f\vert Dm_v[h]\rangle.
+\end{align}
+
+Formally differentiating the fixed-point equations satisfied by $q_v$ and $\phi_v$ then gives the linearised equations
+\begin{align}
+    (\Id-P_v)\dot q_v[h]&=(DP_v[h])q_v,\label{eq: linearised stationary}\\
+    (\Id-P_v)\dot \phi_v[h]&=-\dot q_v[h]+(DP_v[h])\phi_v.\label{eq: linearised transient}
+\end{align}
+The derivative of the pushforward operator is again understood weakly: for any test function $f$,
+\begin{align}
+    \langle f\vert (DP_v[h])\mu\rangle=\frac{\de}{\de\varepsilon}\Big\vert_{\varepsilon=0}\langle f\vert P_{v+\varepsilon h}\mu\rangle.
+\end{align}
+If $f$ is differentiable, this becomes
+\begin{align}
+    \langle f\vert (DP_v[h])\mu\rangle=\int \nabla f(x+v(x))\cdot h(x)\,\mu(\de x).
+\end{align}
+Hence the object that needs to be computed in the gradient of the Lagrangian is the weak Fr\'echet derivative of the signed-measure-valued maps $v\mapsto q_v$ and $v\mapsto \phi_v$, rather than a Lions derivative. The main analytical difficulty is then to justify existence of $Dq_v$ and $D\phi_v$, which typically requires stability or mixing assumptions ensuring that the resolvent $(\Id-P_v)^{-1}$ is well defined on the relevant subspace of signed measures.
+
+
+
 
 
 
