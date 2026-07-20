@@ -107,7 +107,7 @@ A contrario, it is tempting to reinterpret \eqref{eq: dynamical system} as a con
 
 Inspired by the recent work of \cite{PDRLOT}, we propose to study this as a \emph{measure constrained} optimal control problem.
 
-\section{Proposed setting}
+\section{Discounted setting}
 
 Let $\gamma\in[0,1)$, $c: \statespace^2 \to \mathbb{R}$ be a measurable cost function, and let $\mu_0\in\Ps(\statespace)$ be a given initial distribution, and consider the optimal control problem, 
 \begin{align}
@@ -227,7 +227,7 @@ The constraints vanish in this case, as the objective is independent of the dist
 For this to be useful for the transport problem, we need to balance with the constraints so that the movement is uniform in time rather than concentrated at infinity.
 
 
-\section{Forgetting about discounting}
+\section{Finite Horizon formulations}
 
 If we set the problem as finite horizon, it is much easier to lay out the constraint we care about for generation.
 
@@ -258,7 +258,7 @@ This forgets about the stationarity completely, but notice that any convex funct
 Something that could be interesting is to include in the cost a term such as $\norm{x}_1$ to encourage a turnpike behaviour, pushing into a latent space and back out of it. We can also replace the squared norm with $s\norm{v}_2^2$ or with $\norm{v}_2$ in order to encourage faster convergence to the target distribution from $\mu_0$. 
 
 
-\section{Thinking about mean-field controls}
+\section{Alternative mean-field control formulations}
 
 Another way to think about the drifting model optimisation is to treat the empirical data as a finite-particle approximation of a mean-field control problem. In particular, we can view \eqref{eq: optimal control problem} as the mean-field control problem
 \begin{align}
@@ -301,7 +301,15 @@ again at a purely formal level. Equation \eqref{eq: mf master} is the discrete a
 
 As for solving the problem, the quadratic term $\norm{v}^2_2$ by itself does not make the optimisation a simple least-squares problem: the nonlinearity is hidden in the pushforward constraint $\mu^+=(\mathrm{id}+\alpha(\cdot,\mu))\pushforward\mu$ and in the dependence of the running cost on the evolving law. Thus a direct calculus-of-variations approach is plausible only in special regimes where one can relax the control problem to a convex optimisation over curves of measures or transport plans, as in Benamou--Brenier or JKO-type formulations; see \citet{San15,JKO98,AGS05}. In the general mean-field control setting one typically needs either the dynamic programming/master equation route or the stochastic/variational maximum principle developed in \citet{BFY13,CD18I,CD18II}. 
 
-\section{Thinking about the transient distribution.}
+\section{Transient distribution model}
+
+The original drifting model paper \cite{deng2026generative} considers a Markov chain over the training time with the goal of following its transition kernel to eventually reach a stationary distribution which is close to or equal to the target distribution $\nu$. In the paper, the transition kernel is constructed by hand, with some conditions which should ensure that the stationary distribution is indeed $\nu$. 
+
+In contrast, it is tempting to view the problem as a control problem, and to explicitely optimise the transition kernel to reach the target distribution $\nu$ in as few learning steps as possible. This imposes a constraint on the ergodic control problem induced by the controlled Markov chain induced by all possible vector fields $v$ during the learning dynamics. To handle this difficulty, we propose to analyse the resulting problem directly through a Lagrangian relaxation with the goal of performing a primal-dual optimisation over the vector field $v$ in which we will use samples for access to $\nu$. 
+
+In practice, much like in the original drifting model paper, we will subsequently use optimise over a parametric family of vector fields as we will parametrise the generative model by a neural network. Because of the chain rule, we will need to compute the gradients of the full Lagrangian with respect to $v$, which is the paradigm we adopt here to begin with. Note that, using the trick of \cite{deng2026generative}, we don't need to explicitely differentiate through the network, it is sufficient to find a good $v$ and then minimise the least-squares loss to stationarity, or use the formulation of \cite{PDRLOT} and generate directly from samples of $\mu_0$ via the transport $v$ (setting the initial network to the identity).
+
+\subsection{Lagrangian of the problem}
 
 If we let $v$ be a constant velocity field, assuming that $v$ induces a stationary distribution $q_v$ for the Markov chain \eqref{eq: dynamical system}, i.e. $q_v=(\Id+v)\pushforward q_v$, then we can define the transient distribution of the Markov chain as
 \begin{align}
@@ -313,9 +321,14 @@ In this case, we can aim to optimise over $v$ to minimise the energy of the tran
     \min_{v\in\Sc}& \int_{\statespace} c(x)\phi(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v.
 \end{align}
 
+\begin{remark}
+    It's important to note how different this formulation is from the Value Driven Transport paper of \cite{PDRLOT}. There is no transport cost from $x$ to $x+v(x)$, here (at least not explicitely). What is penalised is a weighting of the system's convergence rate to the stationary distribution based on different costs in space. If we proceed we should be able to show this effect by making $c=1+\1_{S}$ for a set $S$ of states, such as a halfspace. We should in general take $c\equiv 1$ if we have no prior knowledge of the target distribution $\nu$. 
+\end{remark}
+
+
 A simple calculation shows that 
 \begin{align}
-    \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v, 
+    \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v, \label{eq: transient distribution constraint}
 \end{align}
 if and only if $\phi_v$ is defined as above. We can add this linear constraint to the optimisation problem, and relax the objective to separate $\phi_v$ and $v$. This gives
 \begin{align}
@@ -338,19 +351,21 @@ While this system has non-linearities in the constraints, it doesn't prevent us 
 The Lagrangian for the system is 
 \begin{align}
     \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle c\vert\phi\rangle+\langle \lambda_1\vert q_v-(\Id+v)\pushforward q_v\rangle+\langle \lambda_2\vert \phi_v-\mu_0+q_v-(\Id+v)\pushforward \phi_v\rangle\notag\\
-    &+\langle \lambda_3\vert q_v-\nu\rangle+\langle \lambda_4\vert \phi_v-\phi\rangle+\lambda_5(\phi(\Omega))\,,
+    &+\langle \lambda_3\vert q_v-\nu\rangle+\langle \lambda_4\vert \phi_v-\phi\rangle+\lambda_5\phi(\Omega)\,,
 \end{align}
 or, reordered,
 \begin{align}
-    \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle c\vert\phi\rangle+\langle \lambda_1\vert (\Id-(\Id+v)\pushforward) q_v\rangle+\langle \lambda_2\vert -(\Id+v)\pushforward \phi_v\rangle+\langle \lambda_2\vert \phi_v-\mu_0+q_v\rangle\notag\\
-    &+\langle \lambda_3\vert q_v-\nu\rangle+\langle \lambda_4\vert \phi_v-\phi\rangle+\lambda_5(\phi(\Omega))\,,\label{eq: lagrangian with measures}
+    \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle c-\lambda_4\vert\phi\rangle+\lambda_5\phi(\Omega) + \langle \lambda_3\vert\nu\rangle+ \langle  \lambda_1+\lambda_2+\lambda_3\vert q_v\rangle+ \langle \lambda_2+\lambda_4\vert \phi_v\rangle \notag\\
+    &\quad- \langle \lambda_1 \vert P_vq_v\rangle -\langle \lambda_2 \vert P_v\phi_v\rangle\,,\label{eq: lagrangian with measures}
 \end{align}
 which is linear in $\phi$ and $q_v$, but non-linear in $v$.
 
-The gradients with respect to the multipliers and $\phi$ are easy provided knowledge of $\phi_v$ and $q_v$ (except for $\lambda_3$ which requires the target $\nu$ but it can take SGD). On the other hand, taking the gradient in the control space yields
+\subsection{Gradients of the Lagrangian}
+
+The gradients with respect to the multipliers and $\phi$ are easy provided knowledge of $\phi_v$ and $q_v$ (except for $\lambda_3$ which requires the target $\nu$ but it can take SGD). On the other hand, taking the gradient in the control space yields\footnote{For simplicity, we develop below for $c$ independent of $v$, but the same reasoning applies if $c$ depends on $v$, up to adding $\langle \nabla_v c\vert \phi\rangle$.}
 \begin{align}
     \nabla_v \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\nabla_v\left(\langle  \lambda_1+\lambda_2+\lambda_3\vert q_v\rangle+ \langle \lambda_2+\lambda_4\vert \phi_v\rangle\right)\notag\\
-    &\qquad+\nabla_v\left(\langle \lambda_1 \vert P_vq_v\rangle -\langle \lambda_2 \vert P_v\phi_v\rangle\right) 
+    &\qquad-\nabla_v\left(\langle \lambda_1 \vert P_vq_v\rangle +\langle \lambda_2 \vert P_v\phi_v\rangle\right) 
 \end{align}
 where $P_v:=(\Id+v)\pushforward$ is the transition operator of the Markov chain, viewed as a linear operator on signed measures.
 
@@ -371,12 +386,12 @@ Similarly, we can define the Gateaux derivative of an operator $v\mapsto O_v$ wi
 (We use the notation $\bar\De$ to distinguish the derivative of an operator applied to a measure-valued map from the derivative of the composed map $v\mapsto O_v m_v$ itself.)
 Assuming both $v\mapsto m_v$ and $v\mapsto O_v$ are Gateaux differentiable, we can then write the product rule
 \begin{align}
-    \De_h (O_v m_v)=\bar\De_h O_v m_v+O_v \De_h m_v.
+    \De_h (O_v m_v)=\bar\De_h O_v m_v+O_v \De_h m_v. \label{eq: product rule for operator and measure}
 \end{align}
 Thus, we can rewrite \eqref{eq: lagrangian with measures} as
 \begin{align}
     \nabla_v \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=&\langle \lambda_1+\lambda_2+\lambda_3\vert \De_h q_v\rangle+ \langle \lambda_2+\lambda_4\vert \De_h \phi_v\rangle\notag\\
-    &\qquad+\langle \lambda_1 \vert \bar\De_h P_v q_v+ P_v \De_h q_v\rangle -\langle \lambda_2 \vert \bar\De_h P_v \phi_v+ P_v \De_h \phi_v\rangle.
+    &\qquad-\langle \lambda_1 \vert \bar\De_h P_v q_v+ P_v \De_h q_v\rangle -\langle \lambda_2 \vert \bar\De_h P_v \phi_v+ P_v \De_h \phi_v\rangle. \label{eq: lagrangian gradient with measures}
 \end{align}
 
 \begin{lemma}\label{lemma: derivative of pushforward operator}
@@ -392,14 +407,6 @@ Thus, we can rewrite \eqref{eq: lagrangian with measures} as
     \end{align}
 \end{lemma}
 
-\begin{lemma}\label{lemma: derivative of q_v}
-    Let $q_v$ be the stationary distribution associated with the operator $P_v$. Then, for any $h\in\Sc$ and $v\in\Sc$, the Gateaux derivative of $q_v$ in direction $h$ is given by
-    \begin{align}
-        ?
-    \end{align}
-\end{lemma}
-
-
 \begin{proof}
     This follows by a taylor expansion of $f$ and the definition of the pushforward operator:
     \begin{align}
@@ -411,47 +418,275 @@ Thus, we can rewrite \eqref{eq: lagrangian with measures} as
     \end{align}
 \end{proof}
 
+While for the $P_v\mu$ terms in the lagrangian ($\mu\in\{q_v,\phi_v\}$), it was convenient to differentiate the inner product with a test function $f\in\Fs$ and directly express the differential of the pushforward operator in terms of the adjoint action on $f$, when differentiating the ergodic terms ($q_v$ and $\phi_v$), we will need to face the measures themselves, and thus we need to compute the Gateaux derivatives $\De_h q_v$ and $\De_h \phi_v$, which we do in \cref{lemma: derivative of q_v} and \cref{lemma: derivative of phi_v} below.
 
-It remains to compute the Gateaux derivatives $\De_h q_v$ and $\De_h \phi_v$. To do so, we start from first principles:
-\begin{align}
- q_{v+\varepsilon h}= \lim_{t\to\infty} \frac1t \sum_{s=0}^{t-1} P_{v+\varepsilon h}^s \mu_0, \qquad
-\end{align}
+Before we move onto these rigourous constructions, let us recall that we care about differentiative $v\mapsto \langle f\vert \mu\rangle$, in other words, we want to prove a Policy Gradient Theorem of the following form.
 
-Meanwhile, 
-\begin{align}
-    \phi_{v+\varepsilon h}(A) = \Eb\left[\sum_{t=1}^{+\infty} \1_{X_{t}^v\in A} - q_v(A) \right]
-\end{align}
+\begin{theorem}\label{thm: policy gradient theorem}
+    Let $q_v$ be the stationary distribution associated with the operator $P_v$. Let $f\in\Fs$ be a test function, then $v\mapsto \langle f\vert q_v\rangle$ is $\Fs$-weakly Gateaux differentiable at $v$, and its Gateaux derivative in direction $h\in\Sc$ is given by
+    \begin{align}
+        \De_h \langle f\vert q_v\rangle=\int \nabla u_f(x+v(x))\cdot h(x)\,q_v(\de x),
+    \end{align}
+    where $u_f$ is a solution to the Poisson equation
+    \begin{align}
+        u_f-P_v^*u_f=f-\langle f\vert q_v\rangle.
+    \end{align}
+\end{theorem}
 
+\begin{proof}
+    Under their technical assumptions, the result follows directly from \cref{lemma: derivative of q_v} and \cref{lemma: poisson representation of derivative of q_v}.  
+\end{proof}
 
-\paragraph{GPT output}
-The appropriate notion of derivative here is not a pointwise derivative of a measure, but rather the weak directional derivative of the map $v\mapsto m_v$ with values in signed measures, tested against the Lagrange multipliers. Concretely, if $m_v$ stands for either $q_v$ or $\phi_v$, we say that $m_v$ is directionally differentiable at $v$ in direction $h\in\Sc$ if there exists a signed measure $\dot m_v[h]\in\Ms$ such that, for every bounded measurable test function $f$,
-\begin{align}
-    \frac{\de}{\de\varepsilon}\Big\vert_{\varepsilon=0}\langle f\vert m_{v+\varepsilon h}\rangle=\langle f\vert \dot m_v[h]\rangle.
-\end{align}
-If $h\mapsto \dot m_v[h]$ is linear and continuous, this is the Fr\'echet derivative of the measure-valued map $v\mapsto m_v$. In particular, for the functional $J(v):=\langle f\vert m_v\rangle$, one has
-\begin{align}
-    DJ(v)[h]=\langle f\vert Dm_v[h]\rangle.
-\end{align}
+\begin{remark}
+    Most often, policy gradient theorems are expressed in terms of the derivative of the score (log-transform of the transition density) of a softmax policy, this will generally not be possible in our setting, as $P_v$ is a transport operator.  
+\end{remark}
 
-Formally differentiating the fixed-point equations satisfied by $q_v$ and $\phi_v$ then gives the linearised equations
-\begin{align}
-    (\Id-P_v)\dot q_v[h]&=(DP_v[h])q_v,\label{eq: linearised stationary}\\
-    (\Id-P_v)\dot \phi_v[h]&=-\dot q_v[h]+(DP_v[h])\phi_v.\label{eq: linearised transient}
-\end{align}
-The derivative of the pushforward operator is again understood weakly: for any test function $f$,
-\begin{align}
-    \langle f\vert (DP_v[h])\mu\rangle=\frac{\de}{\de\varepsilon}\Big\vert_{\varepsilon=0}\langle f\vert P_{v+\varepsilon h}\mu\rangle.
-\end{align}
-If $f$ is differentiable, this becomes
-\begin{align}
-    \langle f\vert (DP_v[h])\mu\rangle=\int \nabla f(x+v(x))\cdot h(x)\,\mu(\de x).
-\end{align}
-Hence the object that needs to be computed in the gradient of the Lagrangian is the weak Fr\'echet derivative of the signed-measure-valued maps $v\mapsto q_v$ and $v\mapsto \phi_v$, rather than a Lions derivative. The main analytical difficulty is then to justify existence of $Dq_v$ and $D\phi_v$, which typically requires stability or mixing assumptions ensuring that the resolvent $(\Id-P_v)^{-1}$ is well defined on the relevant subspace of signed measures.
+Let us now compute the Gateaux derivative of the stationary distribution $q_v$ with respect to $v$ to prove \cref{thm: policy gradient theorem}. 
 
 
+\begin{lemma}\label{lemma: derivative of q_v}
+    Let $q_v$ be the stationary distribution associated with the operator $P_v$. Assume that for all sufficiently small $\varepsilon>0$, $(v+\varepsilon h\in\mathcal S)$, the operator $(P_{v+\varepsilon h})$ is a Markov operator on probabilities, and it admits a stationary distribution $(q_{v+\varepsilon h})$.\footnote{We need to be a bit careful about verifying these assumptions with stability properties.}
+    
+    Assume that $v\mapsto q_v$ is $\Fs$-weakly Gateaux differentiable at $v$, and that $(\Id-P_v)$ admits an inverse on the subspace of zero-mass signed measures. 
+    
+    Then, for any $h\in\Sc$, the Gateaux derivative of $q_v$ in direction $h$ is the unique zero-mass signed measure $m$ solving
+    \begin{align}
+        (\Id-P_v) m =\bar\De_h P_v q_v,
+    \end{align}
+    (understood in the $\Fs$-weak topology, still), that is,
+    \begin{align}
+        \De_h q_v=(\Id-P_v)^{-1}\bar\De_h P_v q_v.
+    \end{align}
+    If, in addition, the Neumann series converges on zero-mass signed measures, then
+    \begin{align}
+        \De_h q_v=\sum_{t=0}^\infty P_v^t\bar\De_h P_v q_v.
+    \end{align}
+\end{lemma}
+
+\begin{proof}
+    Since $q_v$ is stationary, it satisfies
+    \begin{align}
+        q_v=P_v q_v.
+    \end{align}
+    Differentiating this identity in the direction $h$ and applying the product rule established in \eqref{eq: product rule for operator and measure} gives
+    \begin{align}
+        \De_h q_v=\De_h(P_v q_v)=\bar\De_h P_v q_v+P_v\De_h q_v.
+    \end{align}
+    Rearranging yields
+    \begin{align}
+        (\Id-P_v)\De_h q_v=\bar\De_h P_v q_v.
+    \end{align}
+    Moreover, since $q_{v+\varepsilon h}$ is a probability measure for every sufficiently small $\varepsilon$, we also have
+    \begin{align}
+        \De_h q_v(\Omega)=\lim_{\varepsilon\to 0}\frac{q_{v+\varepsilon h}(\Omega)-q_v(\Omega)}{\varepsilon}=0.
+    \end{align}
+    Thus $\De_h q_v$ belongs to the zero-mass subspace, on which $(\Id-P_v)$ is invertible by assumption, so
+    \begin{align}
+        \De_h q_v=(\Id-P_v)^{-1}\bar\De_h P_v q_v.
+    \end{align}
+    If the Neumann series for $(\Id-P_v)^{-1}$ converges on that subspace, then
+    \begin{align}
+        (\Id-P_v)^{-1}=\sum_{t=0}^\infty P_v^t,
+    \end{align}
+    and therefore
+    \begin{align}
+        \De_h q_v=\sum_{t=0}^\infty P_v^t\bar\De_h P_v q_v.
+    \end{align}
+\end{proof}
+
+Finally, let's rewrite the duality bracket $\langle f\vert \De_h q_v\rangle$ in terms of the solution to the Poisson equation, which will give us the form of the policy gradient theorem.
+
+\begin{lemma}\label{lemma: poisson representation of derivative of q_v}
+    Let $f\in\Fs$, and assume that the Poisson equation
+    \begin{align}
+        u_f-P_v^*u_f=f-\langle f\vert q_v\rangle
+    \end{align}
+    admits a solution $u_f\in\Cc^1(\statespace)\cap\Fs$. Then, for every direction $h\in\Sc$,
+    \begin{align}
+        \De_h\langle f\vert q_v\rangle=\langle u_f\vert \bar\De_h P_v q_v\rangle.
+    \end{align}
+    Consequently, 
+    \begin{align}
+        \De_h\langle f\vert q_v\rangle=\int \nabla u_f(x+v(x))\cdot h(x)\,q_v(\de x).
+    \end{align}
+\end{lemma}
+
+\begin{proof}
+    Since $\De_h q_v$ has zero total mass by \cref{lemma: derivative of q_v}, we have
+    \begin{align}
+        \De_h\langle f\vert q_v\rangle
+        =\langle f\vert \De_h q_v\rangle
+        =\left\langle f-\langle f\vert q_v\rangle\middle\vert \De_h q_v\right\rangle.
+    \end{align}
+    Using the Poisson equation, this becomes
+    \begin{align}
+        \De_h\langle f\vert q_v\rangle
+        =\langle (\Id-P_v^*)u_f\vert \De_h q_v\rangle
+        =\langle u_f\vert (\Id-P_v)\De_h q_v\rangle.
+    \end{align}
+    Applying \cref{lemma: derivative of q_v} yields
+    \begin{align}
+        \De_h\langle f\vert q_v\rangle=\langle u_f\vert \bar\De_h P_v q_v\rangle.
+    \end{align}
+    The final identity then follows from \cref{lemma: derivative of pushforward operator}:
+    \begin{align}
+        \langle u_f\vert \bar\De_h P_v q_v\rangle
+        =\int \nabla u_f(x+v(x))\cdot h(x)\,q_v(\de x).
+    \end{align}
+\end{proof}
 
 
+\begin{remark}
+    The existence of a $\Cc^1$ solution to the Poisson equation for any sufficiently regular source term $f$ is a regularity theory result for the associated integral equation. It should be well-studied but will require assumptions. 
+\end{remark}
 
+We can proceed in much the same way for the transient distribution $\phi_v$. However, its implicit dependence on $q_v$ (see \eqref{eq: transient distribution constraint}) will reintroduce the derivative of $q_v$ to the calculations. This produces a second coupled Poisson equation on the advantage function.
+
+\begin{lemma}\label{lemma: derivative of phi_v}
+    Assume that $v\mapsto \phi_v$ is $\Fs$-weakly Gateaux differentiable at $v$, and that $(\Id-P_v)$ admits an inverse on the subspace of zero-mass signed measures. Then, for any $h\in\Sc$, the Gateaux derivative of $\phi_v$ in direction $h$ is the unique zero-mass signed measure solving
+    \begin{align}
+        (\Id-P_v)\De_h\phi_v=-\De_h q_v+\bar\De_h P_v\phi_v,
+    \end{align}
+    that is,
+    \begin{align}
+        \De_h\phi_v=(\Id-P_v)^{-1}\left(-\De_h q_v+\bar\De_h P_v\phi_v\right).
+    \end{align}
+\end{lemma}
+
+\begin{proof}
+    Differentiating the fixed-point identity
+    \begin{align}
+        \phi_v=\mu_0-q_v+P_v\phi_v
+    \end{align}
+    in the direction $h$ and using \eqref{eq: product rule for operator and measure} gives
+    \begin{align}
+        \De_h\phi_v=-\De_h q_v+\bar\De_h P_v\phi_v+P_v\De_h\phi_v.
+    \end{align}
+    Hence
+    \begin{align}
+        (\Id-P_v)\De_h\phi_v=-\De_h q_v+\bar\De_h P_v\phi_v.
+    \end{align}
+    Since $\phi_v(\Omega)=0$ for every admissible $v$, we also have $\De_h\phi_v(\Omega)=0$, so $\De_h\phi_v$ belongs to the zero-mass subspace. The claimed representation follows by inverting $(\Id-P_v)$ on that subspace.
+\end{proof}
+
+\begin{theorem}[Transient measure gradient theorem]\label{thm: transient policy gradient theorem}
+    Let $f\in\Fs$, and assume that the Poisson equations
+    \begin{align}
+        u_f-P_v^*u_f&=f-\langle f\vert q_v\rangle,\\
+        w_f-P_v^*w_f&=u_f-\langle u_f\vert q_v\rangle
+    \end{align}
+    admit solutions $u_f,w_f\in\Cc^1(\statespace)\cap\Fs$. Then the map $v\mapsto \langle f\vert \phi_v\rangle$ is $\Fs$-weakly Gateaux differentiable at $v$, and for every direction $h\in\Sc$,
+    \begin{align}
+        \De_h\langle f\vert \phi_v\rangle
+        =\langle u_f\vert \bar\De_h P_v\phi_v\rangle-\langle w_f\vert \bar\De_h P_v q_v\rangle.
+    \end{align}
+    Consequently,
+    \begin{align}
+        \De_h\langle f\vert \phi_v\rangle
+        =\int \nabla u_f(x+v(x))\cdot h(x)\,\phi_v(\de x)
+        -\int \nabla w_f(x+v(x))\cdot h(x)\,q_v(\de x).
+    \end{align}
+\end{theorem}
+
+\begin{proof}
+    Since $\phi_v(\Omega)=0$ for every admissible $v$, the derivative also has zero total mass, and hence
+    \begin{align}
+        \De_h\langle f\vert \phi_v\rangle
+        =\langle f\vert \De_h\phi_v\rangle
+        =\left\langle f-\langle f\vert q_v\rangle\middle\vert \De_h\phi_v\right\rangle.
+    \end{align}
+    Using the Poisson equation for $u_f$ gives
+    \begin{align}
+        \De_h\langle f\vert \phi_v\rangle
+        =\langle (\Id-P_v^*)u_f\vert \De_h\phi_v\rangle
+        =\langle u_f\vert (\Id-P_v)\De_h\phi_v\rangle.
+    \end{align}
+    Applying \cref{lemma: derivative of phi_v} yields
+    \begin{align}
+        \De_h\langle f\vert \phi_v\rangle
+        =-\langle u_f\vert \De_h q_v\rangle+\langle u_f\vert \bar\De_h P_v\phi_v\rangle. \label{eq: derivative of IP with transient distribution proof}
+    \end{align}
+    Since $\De_h q_v(\Omega)=0$, we may subtract the constant $\langle u_f\vert q_v\rangle$ and use the Poisson equation for $w_f$ to write
+    \begin{align}
+        \langle u_f\vert \De_h q_v\rangle
+        &=\left\langle u_f-\langle u_f\vert q_v\rangle\middle\vert \De_h q_v\right\rangle\\
+        &=\langle (\Id-P_v^*)w_f\vert \De_h q_v\rangle\\
+        &=\langle w_f\vert (\Id-P_v)\De_h q_v\rangle.
+    \end{align}
+    Using \cref{lemma: derivative of q_v} then gives
+    \begin{align}
+        \langle u_f\vert \De_h q_v\rangle=\langle w_f\vert \bar\De_h P_v q_v\rangle.
+    \end{align}
+    Substituting back into \eqref{eq: derivative of IP with transient distribution proof}, we obtain
+    \begin{align}
+        \De_h\langle f\vert \phi_v\rangle
+        =\langle u_f\vert \bar\De_h P_v\phi_v\rangle-\langle w_f\vert \bar\De_h P_v q_v\rangle.
+    \end{align}
+    The integral representation follows from \cref{lemma: derivative of pushforward operator} applied to both terms.
+\end{proof}
+
+We can now substitute the stationary and transient policy gradient formulas into the directional derivative of the Lagrangian.
+
+\begin{lemma}\label{lemma: lagrangian gradient via poisson equations}
+    Let
+    \begin{align}
+        f_q&:=(\Id-P_v^*)\lambda_1+\lambda_2+\lambda_3,\\
+        f_\phi&:=(\Id-P_v^*)\lambda_2+\lambda_4.
+    \end{align}
+    Assume that the Poisson equations
+    \begin{align}
+        U_q-P_v^*U_q&=f_q-\langle f_q\vert q_v\rangle,\\
+        U_\phi-P_v^*U_\phi&=f_\phi-\langle f_\phi\vert q_v\rangle,\\
+        W_\phi-P_v^*W_\phi&=U_\phi-\langle U_\phi\vert q_v\rangle
+    \end{align}
+    admit solutions in $\Cc^1(\statespace)\cap\Fs$. Then the directional derivative of the Lagrangian in the direction $h\in\Sc$ is given by
+    \begin{align}
+        \De_h\Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)
+        =&\ \langle U_\phi-\lambda_2\vert \bar\De_h P_v\phi_v\rangle\notag\\
+        &+\langle U_q-W_\phi-\lambda_1\vert \bar\De_h P_v q_v\rangle.
+    \end{align}
+    Equivalently,
+    \begin{align}
+        \De_h\Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)
+        =&\int \nabla (U_\phi-\lambda_2)(x+v(x))\cdot h(x)\,\phi_v(\de x)\notag\\
+        &+\int \nabla (U_q-W_\phi-\lambda_1)(x+v(x))\cdot h(x)\,q_v(\de x).
+    \end{align}
+    In other words, when this expression is well-defined, the Fréchet derivative of the Lagrangian in the $\Fs$-weak topology is given by
+    \begin{align}
+        \nabla_v \Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)=P_v^*\nabla (U_\phi-\lambda_2)\de\phi_v+P_v^*\nabla (U_q-W_\phi-\lambda_1)\de q_v.
+    \end{align}
+\end{lemma}
+
+\begin{proof}
+    Starting from the directional derivative formula in \eqref{eq: lagrangian gradient with measures} and moving $P_v$ to the test-function side, we obtain
+    \begin{align}
+        \De_h\Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)
+        =&\left\langle (\Id-P_v^*)\lambda_1+\lambda_2+\lambda_3\middle\vert \De_h q_v\right\rangle\notag\\
+        &+\left\langle (\Id-P_v^*)\lambda_2+\lambda_4\middle\vert \De_h \phi_v\right\rangle\notag\\
+        &-\langle \lambda_1\vert \bar\De_h P_v q_v\rangle-\langle \lambda_2\vert \bar\De_h P_v\phi_v\rangle.
+    \end{align}
+    By definition of $f_q$ and $f_\phi$, this becomes
+    \begin{align}
+        \De_h\Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)
+        =&\ \De_h\langle f_q\vert q_v\rangle+\De_h\langle f_\phi\vert \phi_v\rangle\notag\\
+        &-\langle \lambda_1\vert \bar\De_h P_v q_v\rangle-\langle \lambda_2\vert \bar\De_h P_v\phi_v\rangle.
+    \end{align}
+    Applying \cref{thm: policy gradient theorem,thm: transient policy gradient theorem} gives
+    \begin{align}
+        \De_h\Lc(v,\phi,\lambda_1,\lambda_2,\lambda_3,\lambda_4)
+        =&\ \langle U_q\vert \bar\De_h P_v q_v\rangle+\langle U_\phi\vert \bar\De_h P_v\phi_v\rangle\notag\\
+        &-\langle W_\phi\vert \bar\De_h P_v q_v\rangle-\langle \lambda_1\vert \bar\De_h P_v q_v\rangle-\langle \lambda_2\vert \bar\De_h P_v\phi_v\rangle,
+    \end{align}
+    and regrouping the terms yields the first formula. The second formula follows from \cref{lemma: derivative of pushforward operator}.
+\end{proof}
+
+\subsection{Conclusion}
+
+We can attack this problem using a primal-dual method, updates in $\lambda_i$, $i\in[5]$ are straightforward, while updating $v$ requires solving three Poisson equations, which we might be able to speed up by trying to learn the ergodic operator $(\Id-P^*_v)^{-1}$ as a function of $v$ (or equivalently the solution to the Poisson equation as a function of $(f,v)$).
+
+The updates depend on $\nu$ only for the $\lambda_3$ update, unless we decide to collapse $q_v=\nu$ into other constraints but I don't think that will be a good idea. This means we would take $\lambda_3$ to belong to a regular function class whose regularity informs the expected regularity of the target distribution $\nu$, then we take a bunch of SGD steps on $\lambda_3$ to learn the target distribution. We take some gradient steps in $\lambda_i$, $i\in\neq 3$, compute the solutions to the Poisson equations, and then take a gradient step (or some stochastic/approximate gradient steps) in $v$ to minimise the Lagrangian.
+
+The problem with this is that each step is probably going to be very expensive due to the integral equation resolution. On the upside, we can use a GPU friendly solver or some clever heuristics based on transport equations like in the previous work. One can hope that the convergence of the primal-dual method is very fast in terms of training, akin to a sort of second-order method, since the Poisson equations should be some kind of gradient equations for the ergodic operator $(\Id-P^*_v)^{-1}$, which is the inverse of the Hessian of the Lagrangian in $v$. It would also be possible to take SGD steps for optimising $v$ by sending individual sample points of $\mu_0$ into $q_v$ by multi-step transport (or even single step?)
 
 %\bibliographystyle{plainnat}
 \bibliography{../ngbib}
