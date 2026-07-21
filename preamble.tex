@@ -46,6 +46,63 @@
 % Cleveref..
 \usepackage[capitalize,noabbrev]{cleveref}
 
+% Explicit names for cleveref (fix environments being labeled as "Theorem")
+\crefname{theorem}{Theorem}{Theorems}
+\Crefname{theorem}{Theorem}{Theorems}
+\crefname{lemma}{Lemma}{Lemmas}
+\Crefname{lemma}{Lemma}{Lemmas}
+\crefname{proposition}{Proposition}{Propositions}
+\Crefname{proposition}{Proposition}{Propositions}
+\crefname{corollary}{Corollary}{Corollaries}
+\Crefname{corollary}{Corollary}{Corollaries}
+\crefname{definition}{Definition}{Definitions}
+\Crefname{definition}{Definition}{Definitions}
+\crefname{remark}{Remark}{Remarks}
+\Crefname{remark}{Remark}{Remarks}
+\crefname{example}{Example}{Examples}
+\Crefname{example}{Example}{Examples}
+\crefname{assumption}{Assumption}{Assumptions}
+\Crefname{assumption}{Assumption}{Assumptions}
+\crefname{conjecture}{Conjecture}{Conjectures}
+\Crefname{conjecture}{Conjecture}{Conjectures}
+\crefname{axiom}{Axiom}{Axioms}
+\Crefname{axiom}{Axiom}{Axioms}
+\crefname{claim}{Claim}{Claims}
+\Crefname{claim}{Claim}{Claims}
+\crefname{observation}{Observation}{Observations}
+\Crefname{observation}{Observation}{Observations}
+
+% jmlr defines several theorem-like environments by reusing the 'theorem'
+% counter. Wrap those existing environments so cleveref records the original
+% environment type instead of collapsing everything to 'theorem'.
+\makeatletter
+\let\jmlr@orig@thm\@thm
+\let\jmlr@cref@thmtype\@empty
+\def\@thm#1#2{%
+	\ifx\jmlr@cref@thmtype\@empty
+		\refstepcounter{#1}%
+	\else
+		\refstepcounter[\jmlr@cref@thmtype]{#1}%
+		\global\let\jmlr@cref@thmtype\@empty
+	\fi
+	\@ifnextchar[{\@ythm{#1}{#2}}{\@xthm{#1}{#2}}%
+}
+\newcommand{\jmlr@patchsharedtheorem}[1]{%
+	\expandafter\let\csname jmlr@orig@env@#1\expandafter\endcsname\csname #1\endcsname
+	\expandafter\def\csname #1\endcsname{%
+		\gdef\jmlr@cref@thmtype{#1}%
+		\csname jmlr@orig@env@#1\endcsname
+	}%
+}
+\jmlr@patchsharedtheorem{lemma}
+\jmlr@patchsharedtheorem{proposition}
+\jmlr@patchsharedtheorem{corollary}
+\jmlr@patchsharedtheorem{definition}
+\jmlr@patchsharedtheorem{remark}
+\jmlr@patchsharedtheorem{example}
+\jmlr@patchsharedtheorem{conjecture}
+\jmlr@patchsharedtheorem{axiom}
+\makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % THEOREMS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

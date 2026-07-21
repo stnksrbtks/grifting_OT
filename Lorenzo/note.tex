@@ -346,7 +346,7 @@ Adding this, plus the constraint that $q_v$ be the target distribution $\nu$, we
     \min_{v\in\Sc,\phi\in\Ms}& \langle c\vert\phi\rangle\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v,\\ & \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v\\ & q_v=\nu \\& \phi\ge \phi_v,\\ & \phi(\Omega)=0.
 \end{align}
 
-While this system has non-linearities in the constraints, it doesn't prevent us from writing the primal-dual system and trying to solve it. The main issue for solving is that we need to be able to 1) compute the stationary distribution $q_v$ for any $v$,  2) compute the transient distribution $\phi_v$ for any $v$, and 3) compute the gradient of the transient distribution with respect to $v$ (maybe doable via PG theorem ?). 
+While this system has non-linearities (in $v$) in the constraints, it doesn't prevent us from writing the primal-dual system and trying to solve it. The main issue for solving is that we need to be able to 1) compute the stationary distribution $q_v$ for any $v$,  2) compute the transient distribution $\phi_v$ for any $v$, and 3) compute the gradient of the transient distribution with respect to $v$ (maybe doable via PG theorem ?). 
 
 The Lagrangian for the system is 
 \begin{align}
