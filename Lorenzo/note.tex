@@ -320,6 +320,7 @@ In this case, we can aim to optimise over $v$ to minimise the energy of the tran
     \min_{v\in\Sc}& \int_{\statespace} c(x)\phi(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v. \label{eq: control problem of minimal bias}
 \end{align}
 
+
 \begin{remark}
     It's important to note how different this formulation is from the Value Driven Transport paper of \cite{PDRLOT}. There is no transport cost from $x$ to $x+v(x)$, here (at least not explicitely). What is penalised is a weighting of the system's convergence rate to the stationary distribution based on different costs in space. If we proceed we should be able to show this effect by making $c=1+\1_{S}$ for a set $S$ of states, such as a halfspace. We should in general take $c\equiv 1$ if we have no prior knowledge of the target distribution $\nu$. 
 \end{remark}
@@ -344,6 +345,8 @@ Adding this, plus the constraint that $q_v$ be the target distribution $\nu$, we
 \begin{align}
     \min_{v\in\Sc,\phi\in\Ms}& \langle c\vert\phi\rangle\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v,\\ & \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v\\ & q_v=\nu \\& \phi\ge \phi_v,\\ & \phi(\Omega)=0.
 \end{align}
+
+A quick exploration of related literature on constrained ergodic problems in MDPs turns up many papers with constraints of the form $\langle g_i\vert q_v\rangle\le 0$, see e.g.\ \cite{vazquez-abad_lp-based_2014} or \cite[and references therein][]{hernandez-lerma_constrained_2003} but none with $ q_v=\nu$. There appears to be a related literature known as "safety constraints" in MDPs, which is concerned for example with bounding the density of certain regions. There appears to be a gap in the literature here due to the lack of a motivating example for this category of constraints. Note that we can always express a density constraint as infinitely many linear constraint on the stationary distribution, by taking $g_i=\1_{s}$ for each state $s$. 
 
 While this system has non-linearities (in $v$) in the constraints, it doesn't prevent us from writing the primal-dual system and trying to solve it. The main issue for solving is that we need to be able to 1) compute the stationary distribution $q_v$ for any $v$,  2) compute the transient distribution $\phi_v$ for any $v$, and 3) compute the gradient of the transient distribution with respect to $v$ (maybe doable via PG theorem ?). 
 
@@ -691,6 +694,9 @@ Alternatively, we can return to the initial problem \eqref{eq: control problem o
 where $\bar\Sc$ is the set of optimal controls for the first equation. 
 
 The issue with starting from the HJB equation is that it is not clear how to enforce the constraint that $q_v=\nu$ in this framework, and it would restrict our freedom choose our optimisation routine.
+
+
+
 
 \subsection{Conclusion}
 
