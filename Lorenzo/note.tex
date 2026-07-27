@@ -212,7 +212,6 @@ The \emph{control-theoretic dual} is the linear problem
     \end{align}
 \end{proof}
 
-
 \subsection{A Remark on minimal energy configurations}
 
 If we set $c(x,y)=\|x-y\|^2$, then the optimal control problem \eqref{eq: optimal control problem} becomes 
@@ -318,7 +317,7 @@ If we let $v$ be a constant velocity field, assuming that $v$ induces a stationa
 
 In this case, we can aim to optimise over $v$ to minimise the energy of the transient distribution, according to some cost criterion. For instance, we can consider the following optimisation problem:
 \begin{align}
-    \min_{v\in\Sc}& \int_{\statespace} c(x)\phi(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v.
+    \min_{v\in\Sc}& \int_{\statespace} c(x)\phi(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v. \label{eq: control problem of minimal bias}
 \end{align}
 
 \begin{remark}
@@ -679,6 +678,19 @@ We can now substitute the stationary and transient policy gradient formulas into
     \end{align}
     and regrouping the terms yields the first formula. The second formula follows from \cref{lemma: derivative of pushforward operator}.
 \end{proof}
+
+\subsection{Relation to bias-optimal Policies}
+
+The system of nested integral equations required to evaluate the gradient of the Lagrangian by computing the finite-time value of the policy $v$ is identical to the calculation found in Markov Decision Processes, which has notably been studied in the context of bias-optimal policies. In the case of bias-optimality, the equations will involve the non-linear maximisation over $v$ as part of the Bellman operator (or Hamiltonian). Here we have only the linear transport part as we are not computing the value of an optimal $v$.
+
+Alternatively, we can return to the initial problem \eqref{eq: control problem of minimal bias}, and derive the HJB equation directly without going through the Lagrangian. The resulting bias-optimal equations are 
+\begin{align}
+    0 &= -\rho^* + \min_{v\in\Sc} \left\{c+ \int u(y)-u P_v(\cdot,\de y)\right\},\\
+    0 &= -w + \min_{v\in\bar\Sc} \left\{ \int w(y)-u P_v(\cdot,\de y)  \right \}
+\end{align}
+where $\bar\Sc$ is the set of optimal controls for the first equation. 
+
+The issue with starting from the HJB equation is that it is not clear how to enforce the constraint that $q_v=\nu$ in this framework, and it would restrict our freedom choose our optimisation routine.
 
 \subsection{Conclusion}
 
