@@ -312,12 +312,12 @@ In practice, much like in the original drifting model paper, we will subsequentl
 
 If we let $v$ be a constant velocity field, assuming that $v$ induces a stationary distribution $q_v$ for the Markov chain \eqref{eq: dynamical system}, i.e. $q_v=(\Id+v)\pushforward q_v$, then we can define the transient distribution of the Markov chain as
 \begin{align}
-    \phi:A\in\Bs(\statespace)\to \sum_{t=0}^\infty \Pb(X_t^\velocity\in A)-q_v(A)\in[0,\infty].
+    \phi_\velocity:A\in\Bs(\statespace)\to \sum_{t=0}^\infty \Pb(X_t^\velocity\in A)-q_v(A)\in[0,\infty].
 \end{align}
 
 In this case, we can aim to optimise over $v$ to minimise the energy of the transient distribution, according to some cost criterion. For instance, we can consider the following optimisation problem:
 \begin{align}
-    \min_{v\in\Sc}& \int_{\statespace} c(x)\phi(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v. \label{eq: control problem of minimal bias}
+    \min_{v\in\Sc}& \int_{\statespace} c(x)\phi_\velocity(\de x)\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v. \label{eq: control problem of minimal bias}
 \end{align}
 
 
@@ -328,14 +328,14 @@ In this case, we can aim to optimise over $v$ to minimise the energy of the tran
 
 A simple calculation shows that 
 \begin{align}
-    \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v, \label{eq: transient distribution constraint}
+    \phi_\velocity=\mu_0-q_\velocity+ (\Id+ \velocity)\pushforward \phi_\velocity, \label{eq: transient distribution constraint}
 \end{align}
-if and only if $\phi_v$ is defined as above. We can add this linear constraint to the optimisation problem, and relax the objective to separate $\phi_v$ and $v$. This gives
+if and only if $\phi_\velocity$ is defined as above. We can add this linear constraint to the optimisation problem, and relax the objective to separate $\phi_\velocity$ and $v$. This gives
 \begin{align}
-    \min_{v\in\Sc,\phi\in\Ms}& \langle c\vert\phi\rangle\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v,\\ & \phi_v=\mu_0-q_v+ (\Id+ v)\pushforward \phi_v \\& \phi\ge \phi_v.
+    \min_{\velocity\in\Sc,\phi\in\Ms}& \langle c\vert\phi_\velocity\rangle\\ \mbox{ subject to }& q_v=(\Id+v)\pushforward q_v,\\ & \phi_\velocity=\mu_0-q_\velocity+ (\Id+ \velocity)\pushforward \phi_\velocity \\& \phi\ge \phi_\velocity.
 \end{align}
 
-The transient distribution $\phi_v$ also has two properties which we can switch to constraints on $\phi$ to make optimising over $\phi$ easier. First, $\phi(\Omega)=0$, as both $\Pb(X_t^\velocity\in\cdot)$ and $q_v$ are probability measures. Notice that $\phi$ is unbounded, as is easily shown by taking the two-state system with transition probability matrix
+The transient distribution $\phi_\velocity$ also has two properties which we can switch to constraints on $\phi$ to make optimising over $\phi$ easier. First, $\phi(\Omega)=0$, as both $\Pb(X_t^\velocity\in\cdot)$ and $q_v$ are probability measures. Notice that $\phi$ is unbounded, as is easily shown by taking the two-state system with transition probability matrix
 \begin{align}
     P_v=\begin{pmatrix} 1-\ve & \ve\\ 0 & 1\end{pmatrix}
 \end{align}
@@ -682,21 +682,6 @@ We can now substitute the stationary and transient policy gradient formulas into
     and regrouping the terms yields the first formula. The second formula follows from \cref{lemma: derivative of pushforward operator}.
 \end{proof}
 
-\subsection{Relation to bias-optimal Policies}
-
-The system of nested integral equations required to evaluate the gradient of the Lagrangian by computing the finite-time value of the policy $v$ is identical to the calculation found in Markov Decision Processes, which has notably been studied in the context of bias-optimal policies. In the case of bias-optimality, the equations will involve the non-linear maximisation over $v$ as part of the Bellman operator (or Hamiltonian). Here we have only the linear transport part as we are not computing the value of an optimal $v$.
-
-Alternatively, we can return to the initial problem \eqref{eq: control problem of minimal bias}, and derive the HJB equation directly without going through the Lagrangian. The resulting bias-optimal equations are 
-\begin{align}
-    0 &= -\rho^* + \min_{v\in\Sc} \left\{c+ \int u(y)-u P_v(\cdot,\de y)\right\},\\
-    0 &= -w + \min_{v\in\bar\Sc} \left\{ \int w(y)-u P_v(\cdot,\de y)  \right \}
-\end{align}
-where $\bar\Sc$ is the set of optimal controls for the first equation. 
-
-The issue with starting from the HJB equation is that it is not clear how to enforce the constraint that $q_v=\nu$ in this framework, and it would restrict our freedom choose our optimisation routine.
-
-
-
 
 \subsection{Conclusion}
 
@@ -705,6 +690,183 @@ We can attack this problem using a primal-dual method, updates in $\lambda_i$, $
 The updates depend on $\nu$ only for the $\lambda_3$ update, unless we decide to collapse $q_v=\nu$ into other constraints but I don't think that will be a good idea. This means we would take $\lambda_3$ to belong to a regular function class whose regularity informs the expected regularity of the target distribution $\nu$, then we take a bunch of SGD steps on $\lambda_3$ to learn the target distribution. We take some gradient steps in $\lambda_i$, $i\in\neq 3$, compute the solutions to the Poisson equations, and then take a gradient step (or some stochastic/approximate gradient steps) in $v$ to minimise the Lagrangian.
 
 The problem with this is that each step is probably going to be very expensive due to the integral equation resolution. On the upside, we can use a GPU friendly solver or some clever heuristics based on transport equations like in the previous work. One can hope that the convergence of the primal-dual method is very fast in terms of training, akin to a sort of second-order method, since the Poisson equations should be some kind of gradient equations for the ergodic operator $(\Id-P^*_v)^{-1}$, which is the inverse of the Hessian of the Lagrangian in $v$. It would also be possible to take SGD steps for optimising $v$ by sending individual sample points of $\mu_0$ into $q_v$ by multi-step transport (or even single step?)
+
+
+\section{Transient distribution and bias optimality}
+
+The aim of the original drifting model paper \cite{deng2026generative} was to find a velocity field $V$ such that the Markov chain $X_{t+1}=X_t+V(X_t)$ has a stationary distribution $q_V$ equal to a target distribution $\nu$. Then, letting $X_t=f_t(\xi)$ for a parametric generative model $f_t$ and a source variable $\xi\sim\mu_0$, the model $f_t$ can be iteratively updated by adjusting the predictions by minimising \[\norm{f\pushforward\mu_0 - (\Id + V)\pushforward f_t\pushforward\mu_0} \]
+using samples from $\mu_0$. (Samples from $\nu$ must be used, implicitely, to compute the velocity field $V$ actually used.)
+
+While this method ingeniously allows for one-step generation by directly learning a transport map in the form of the network $f_\infty$, its main shortcoming is that it leaves the question of how to design an effective velocity field $V$ largely open, despite some initial results by the authors. 
+
+Instead of trying to design $V$ from first principles via assumptions on the structure of $\nu$, we would argue that historical trends in ML pleads in favour of designing an adaptive velocity field which is learned from the data itself during training. In some sense, this logic is a dynamic analog to the move from manually designed kernel methods to learned representations which gave rise to deep learning. 
+
+Let us suppose that we have a class of possible velocity fields $\mathcal V$, ideally a very large one. Optimising $V\in\mathcal V$ to learn to generate from $\nu$ presents four problems:
+\begin{enumerate}
+    \item What is the criterion for selecting $V$? 
+    \item Given full information on $\nu$, and this criterion what is the best choice of $V$ to generate from $\nu$? 
+    \item Given sample access to $\nu$, how can we learn this best choice of $V$?
+    \item How can we go from a learned $V$ to a generative model?
+\end{enumerate} 
+The fourth point is already addressed in \cite{deng2026generative}, though we will return to discussing the topic of simultaneous or successive updates of $V$ and $f_t$. 
+
+\subsection{Selection criteria for $V$}
+
+While it remains somewhat unclear what the best criterion for selecting $V$ is, we will make two general working assumptions. First, we will assume that training time, as measured by the number of steps to convergence, is to be minimised. Second, we will assume a preference, \emph{ceteris paribus}, for more regular velocity fields. In particular, we will focus on minimising energy functionals on the velocity field, such as the $L^2$ norm of $V$ or its derivatives, in the hopes of producing a smooth velocity field which is easier to learn and simulate from, and generalizes better.
+
+It would be worthwhile to explore formal arguments in favour of some of these choices. Including what kinds of neural network classes we will want to parametrise the velocity field $V$ with, and Helmholtz decomposition arguments. 
+
+In general, we will represent the desirability of a velocity field $V$ by a cost function $c:\statespace\x\actionspace\to\Rb$, such as $c(x,a)=1+\frac12\norm{a}^2$, with the value of $V$ being 
+$\int c(x,V(x))\de m(x)$ for some measure $m$ on $\statespace$.
+Let $\velocity\in \actionspace^\statespace$ be an admissible velocity field, and let $P_\velocity$ be the associated Markov transition operator. It is clear that $P_\velocity$ is a (deterministic) transport operator, which acts on measures by the pushforward
+\begin{align}
+    P_\velocity\mu=(\Id+\velocity)\pushforward\mu, \mbox{ for all } \mu\in\Ps(\statespace).
+\end{align}
+Consequently, the induced Markov chain $X_{t+1}=X_t+\velocity(X_t)$, $t\ge0$ satisfies the law $X_t\sim P_\velocity^t\mu_0$, $t\ge0$, when its initial distribution is $\mu_0$. 
+
+The velocity field $\velocity$ is said to be \emph{ergodic} if $P_\velocity$ admits a unique stationary distribution, which we will always denote $q_\velocity$, which is the unique solution of the fixed-point equation
+\begin{align}
+    q_\velocity=P_\velocity q_\velocity.
+\end{align}
+
+We will discuss the existence and uniqueness of $q_\velocity$ in more detail in \cref{sec: ergodicity and existence of stationary distribution}.
+
+
+Let $\velocityspace$ denote the set of ergodic admissible velocity fields.
+Since we are interested in generating from a target distribution $\nu$, we will often restrict our attention to the set of ergodic velocity fields which preserve $\nu$, \ie
+\begin{align}
+    \Vc_\nu:=\left\{\velocity\in\velocityspace:\;P_\velocity\nu=\nu\right\}. \label{eq: feasible velocity fields}
+\end{align}
+Under constraint of \eqref{eq: feasible velocity fields}, the minimal training cost obtainable is given by the solution to the optimisation problem 
+\begin{align}
+    \inf_{\velocity\in\Vc}\ & \sum_{t=0}^{\infty}\int c(x,\velocity(x))\left(P_\velocity^t\mu_0-\nu\right)(\de x) \label{eq: introduction of primal bias optimal problem}\\
+    \mbox{s.t.}\;& P_\velocity\nu=\nu, \notag
+\end{align}
+where $\nu$ has been introduced as a renormalisation factor to ensure the problem value is finite if $\Vc_\nu$ is nonempty. 
+
+This problem is known in the Markov Decision Process literature as the problem of selecting a \emph{bias-optimal policy}. The problem is well-studied in the absence of the terminal constraint $q_\velocity=\nu$ (implicit in $P_\velocity\nu=\nu$), despite many works on control-from constraints such as \citet[][and references therein]{vazquez-abad_lp-based_2014,hernandez-lerma_constrained_2003} and on bounding densities of $q_\velocity$ on certain regions of space (``safety constraints'') \citep{?}. 
+
+
+\subsection{Bias-optimal ergodic control}
+
+Several paths are possible to attack \eqref{eq: introduction of primal bias optimal problem}. The most direct is to express the problem in terms of the transient measure $\phi_\velocity$ defined by
+\begin{align}
+    \phi_\velocity:=\sum_{t=0}^{\infty}\left(P_\velocity^t\mu_0-\nu\right),
+    \label{eq: introduction of transient measure}
+\end{align}
+which is a signed measure on $\statespace$ with zero total mass. The transient measure satisfies
+\begin{align}
+    \phi_\velocity-P_\velocity\phi_\velocity=\mu_0-q_\velocity,
+    \qquad\mbox{ and thus }\qquad \phi_\velocity(\statespace)=0. \label{eq: introduction of transient measure flow equation}
+\end{align}
+The problem \eqref{eq: introduction of primal bias optimal problem} can then be rewritten as
+\begin{align}
+    \inf_{\velocity\in\Vc_\nu}\ & \int c(x,\velocity(x))\,\phi_\velocity(\de x) \label{eq: introduction of transient measure problem}\\
+    \mbox{s.t.}\;& \phi_\velocity-P_\velocity\phi_\velocity=\mu_0-\nu. \notag
+\end{align}
+
+\begin{proposition}\label{prop: bias optimality and transient measure}
+    For $\velocity\in\Vc_\nu$, write $c_\velocity(x):=c(x,\velocity(x))$ and $\rho_\velocity:=\langle c_\velocity\vert\nu\rangle$. Notice that, if $c$ is independent of $a$, then $\rho_\velocity$ is a constant.
+    When this problem is well-defined, the problem in \eqref{eq: introduction of transient measure problem} is equivalent to 
+    \begin{align}
+        \inf_{\velocity\in\Vc_\nu,\,u,w\in\Fs}\quad
+        &\langle u\vert\mu_0\rangle\notag\\
+        \text{subject to}\quad
+        &\begin{cases}u-P_\velocity^*u&=c_\velocity-\langle c_\velocity\vert\nu\rangle,\\
+         \langle u\vert\nu\rangle&=0,\end{cases}\notag\\
+        \text{and}\quad &\begin{cases}
+        w-P_\velocity^*w&=u,\\
+        \langle w\vert\nu\rangle&=0.
+        \end{cases}\label{eq: poisson representation of bias optimality}
+    \end{align}
+    That is to say, if there is a velocity field $\velocity^*\in\Vc_\nu$ and solutions (in the topology chosen via $\Fs$ for the measures) ot the first and second Poisson equations in 
+    \begin{align}
+        \begin{cases} u_{\velocity^*}-P_\velocity^*u_{\velocity^*}
+        &=c_{\velocity^*}-\rho_{\velocity^*},\\
+        \langle u_{\velocity^*}\vert\nu\rangle&=0,\end{cases}\label{eq: first bias poisson equation}\\
+        %
+        \begin{cases}w_{\velocity^*}-P_\velocity^*w_{\velocity^*}
+        &=u_{\velocity^*},\\
+        \langle w_{\velocity^*}\vert\nu\rangle&=0.\end{cases}\label{eq: second bias poisson equation}
+    \end{align}
+    then $\langle c_{\velocity^*}\vert\phi_{\velocity^*}\rangle$ is the value of of \eqref{eq: introduction of transient measure problem} and, furthermore, the following identities hold:
+    \begin{align}
+        \langle c_{\velocity^*}\vert\phi_{\velocity^*}\rangle
+        &=\langle u_{\velocity^*}\vert\mu_0\rangle,\label{eq: first bias representation}\\
+        \langle u_{\velocity^*}\vert\phi_{\velocity^*}\rangle
+        &=\langle w_{\velocity^*}\vert\mu_0\rangle.\label{eq: second bias representation}
+    \end{align}
+\end{proposition}
+
+\begin{proof}
+    Let $\velocity\in\Vc_\nu$ and let $u_\velocity$ be an associated solution to \eqref{eq: first bias poisson equation}. Then $\phi_\velocity(\statespace)=0$, the first Poisson equation and the transient flow equation \eqref{eq: introduction of transient measure flow equation} give
+    \begin{align}
+        \langle c_\velocity\vert\phi_\velocity\rangle
+        &=\langle c_\velocity-\rho_\velocity\vert\phi_\velocity\rangle\\
+        &=\langle (\Id-P_\velocity^*)u_\velocity\vert\phi_\velocity\rangle\\
+        &=\langle u_\velocity\vert(\Id-P_\velocity)\phi_\velocity\rangle\\
+        &=\langle u_\velocity\vert\mu_0-\nu\rangle
+        =\langle u_\velocity\vert\mu_0\rangle,
+    \end{align}
+    which proves \eqref{eq: first bias representation}. Applying the same argument to the second Poisson equation yields
+    \begin{align}
+        \langle u_\velocity\vert\phi_\velocity\rangle
+        &=\langle (\Id-P_\velocity^*)w_\velocity\vert\phi_\velocity\rangle\\
+        &=\langle w_\velocity\vert\mu_0-\nu\rangle
+        =\langle w_\velocity\vert\mu_0\rangle,
+    \end{align}
+    proving \eqref{eq: second bias representation}. The first identity shows that the objectives in \eqref{eq: introduction of transient measure problem} and \eqref{eq: poisson representation of bias optimality} agree for every feasible velocity field. Their minimizers therefore coincide.
+\end{proof}
+
+Because of the (implicit) constraint $q_\velocity=\nu$, the existence of a dynamic programming principle is not guaranteed, and there is no reason to expect that the resolution for $v$ can be done by a greedy selector in the form of a Hamilton-Jacobi-Bellman equation. Instead, we will have to solve the problem in a global manner, which is why it is more realistic to focus on the lagrangian and occupancy-measure forms of the problem. 
+
+
+
+\subsection{State-action occupancy measures}
+
+
+We will extend notion from $(q_\velocity,\phi_\velocity)$ to $(\bar q_\velocity,\bar\phi_\velocity)$, the state-action occupancy measures defined by
+\begin{align}
+    \bar q_\velocity(\de x,\de a)&:=q_\velocity(\de x)\delta_{\velocity(x)}(\de a),\\
+    \bar\phi_\velocity(\de x,\de a)&:=\phi_\velocity(\de x)\delta_{\velocity(x)}(\de a),
+\end{align}
+In general, we will consider randomised policies $\pi_\cdot:\statespace\to\Ps(\velocityspace)$, and define the state-action occupancy measures by
+\begin{align}
+    \bar q_\pi(\de x,\de a)&:=q_\pi(\de x)\pi_a(\de a\mid x),\\
+    \bar\phi_\pi(\de x,\de a)&:=\phi_\pi(\de x)\pi_a(\de a\mid x),
+\end{align}
+where $q_\pi$ and $\phi_\pi$ are the state marginals of $\bar q_\pi$ and $\bar\phi_\pi$, respectively. Let us introduce $K$ the kernel associated with the transition operator $P_\pi$:
+\begin{align}
+    K(B\mid x,a):=\1_B(x+a),\qquad\mbox{ for all } B\in\Bs(\statespace),\ x\in\statespace,\ a\in\velocityspace.
+\end{align}
+
+The flow equations for the state-action occupancy measures are
+\begin{align}
+    \bar q_\pi(B\times A)&=\int_{\statespace\times\velocityspace}K(B\mid x,a)\,\bar q_\pi(\de x,\de a),\\
+    \bar\phi_\pi(B\times A)&=\mu_0(B)-\bar q_\pi(B\times A)+\int_{\statespace\times\velocityspace}K(B\mid x,a)\,\bar\phi_\pi(\de x,\de a),
+\end{align}
+for all $B\in\Bs(\statespace)$ and $A\in\Bs(\velocityspace)$. The compatibility condition 
+\begin{align}
+    \bar q_\pi(\de x,\de a)=q_\pi(\de x)\pi_x(\de a),
+    \qquad
+    \bar\phi_\pi(\de x,\de a)=\phi_\pi(\de x)\pi_x(\de a),
+\end{align}
+is also required to ensure that the two occupancy measures are induced by the same policy.
+
+In this paradigm, we can rewrite the bias-optimal control problem in terms of the state-action occupancy measures as
+\begin{align}
+    \inf_{\pi\in\Pi_\nu}\ & \int c(x,a)\bar\phi_\pi(\de x,\de a) \label{eq: introduction of state-action occupancy measure problem}\\
+    \mbox{s.t.}\;& \bar\phi_\pi(B\times A)-\int_{\statespace\times\velocityspace}K(B\mid x,a)\,\bar\phi_\pi(\de x,\de a)=\mu_0(B)-\bar q_\pi(B\times A),\notag\\
+    &\bar q_\pi(B\times A)=\int_{\statespace\times\velocityspace}K(B\mid x,a)\,\bar q_\pi(\de x,\de a),\notag\\
+    &\bar q_\pi(\de x,\de a)=q_\pi(\de x)\pi_x(\de a),\notag\\   
+    &\bar\phi_\pi(\de x,\de a)=\phi_\pi(\de x)\pi_x(\de a),\notag
+\end{align}
+where $\Pi_\nu$ is the set of admissible policies which preserve $\nu$.
+
+
+
+\subsection{Existence and uniqueness of stationary distributions}\label{sec: ergodicity and existence of stationary distribution}
+
 
 %\bibliographystyle{plainnat}
 \bibliography{../ngbib}
