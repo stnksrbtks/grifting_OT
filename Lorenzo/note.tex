@@ -86,7 +86,7 @@
 \end{keywords}
 
 
-Consider an affine measurable space $\statespace\subset\mathbb{R}^d$. Fixing $(\pspaceomega,\pspacef,\Pb)$, $\pspaceomega=\statespace$, $\pspacef=\Bs(\statespace)$ the Borell $\sigma$-algebra of $\statespace$, and $\Pb$ a probability measure on $(\pspaceomega,\pspacef)$. Let $v:=(v_t)_{t\in\Nb}$ be a collection of $\pspacef$-measurable automorphisms on $\statespace$. For any random variable $X:\pspaceomega\to\statespace$, let $\Lc(X)$ denote the law of $X$ under $\Pb$.
+Consider an affine measurable space $\statespace\subset\mathbb{R}^d$. Fixing $(\pspaceomega,\pspacef,\Pb)$, $\pspaceomega:=\statespace$, $\pspacef:=\Bs(\statespace)$ the Borell $\sigma$-algebra of $\statespace$, and $\Pb$ a probability measure on $(\pspaceomega,\pspacef)$. Let $v:=(v_t)_{t\in\Nb}$ be a collection of $\pspacef$-measurable automorphisms on $\statespace$. For any random variable $X:\pspaceomega\to\statespace$, let $\Lc(X)$ denote the law of $X$ under $\Pb$.
 
 The dynamical system of a drifting model \citep{deng2026generative} evolves the prediction $X$ during training according to the following Markov chain:
 \begin{align}
@@ -98,10 +98,11 @@ Equivalently, letting $\mu_0$ be a probability measure on $(\pspaceomega,\pspace
     \begin{cases} \Lc(X_{t+1}^\velocity)=(\Id+\velocity_t)\pushforward\Lc(X_t^\velocity)\\ \Lc(X_0^\velocity)=\mu_0 \end{cases}
 \end{align}
 
-The development of drifting models \cite{deng2026generative} rests on the idea of crafting (by hand) a vector-field-valued map $v$ which is asymptotically stable and whose attracting equilibrium induces $X_{\infty}\sim\nu$ for a given target distribution $\nu\in\Ps(\statespace)$. 
-By using the methodology of least-squares fitting outlined in \cite{deng2026generative}, the specification of $v$ can be leveraged into the \textit{training} of a neural network $f$ which yields an approximate pushforward map transforming a given noise distribution $\mu_0$ into the target distribution $\nu$, i.e.\ $\nu\approx f\pushforward\mu_0$.
+The development of drifting models \cite{deng2026generative} rests on two ideas: 1) crafting (by hand) a vector-field-valued map $v$ which is asymptotically stable and whose attracting equilibrium induces $X_{\infty}\sim\nu$ for a given target distribution $\nu\in\Ps(\statespace)$; 2) Using least-squares to track the evolution of $X_{t}^\velocity$ by modifying the parameters of a neural network $f$ which approximates the pushforward map $f\pushforward\mu_0\approx \Lc(X_{t}^\velocity)$.
 
-From a technical standpoint, the authors of \cite{deng2026generative} construct a family of vector fields $v$ depending on $\nu$ and $\Lc(X_{t}^\velocity)$ which admits as \emph{an} equilibrium the target distribution $\nu$. However, under general conditions it remains unclear whether the resulting mean-field dynamics of $X_t$ will meaningfully converge to $\nu$ as $t\to\infty$, despite them giving some sufficient conditions. 
+Combining these two ideas, once training has converged, \citeauthor{deng2026generative} can leverage the specification of $v$ into a single approximate pushforward map transforming a given noise distribution $\mu_0$ into the target distribution $\nu$, i.e.\ $\nu\approx f\pushforward\mu_0$, thus providing a generative model which operates in a single forward pass unlike traditional diffusion models \cite{...}.
+
+From a technical standpoint, \citeauthor{deng2026generative} construct a family of vector fields $v$ depending on $\nu$ and $\Lc(X_{t}^\velocity)$ which admits as \emph{an} equilibrium the target distribution $\nu$. However, under general conditions it remains unclear whether the resulting mean-field dynamics of $X_t$ will meaningfully converge to $\nu$ as $t\to\infty$, despite them giving some sufficient conditions. 
 
 A contrario, it is tempting to reinterpret \eqref{eq: dynamical system} as a control problem, and try and determine $\velocity$ through the specification of an objective function to be optimised. At an intuitive level, we can then view the efforts of \cite{deng2026generative} as an ad-hoc attempt to guess a control $\velocity$ which will yield the desired target distribution $\nu$. 
 
